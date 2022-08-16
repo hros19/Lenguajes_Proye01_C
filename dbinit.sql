@@ -10,7 +10,7 @@ DROP DATABASE IF EXISTS pdvAgricola;
 CREATE DATABASE IF NOT EXISTS pdvAgricola;
 USE pdvAgricola;
 SET GLOBAL sql_mode = '';
-ALTER DATABASE pdvAgricola CHARACTER SET utf8 COLLATE utf8_general_ci;
+-- ALTER DATABASE pdvAgricola CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 -- ===================================================
 -- >> USUARIOS
@@ -38,6 +38,19 @@ CREATE PROCEDURE get_usuarios()
 BEGIN
   SELECT * FROM Usuarios;
 END $$
+
+-- GET Usuario por nombre de usuario
+CREATE PROCEDURE get_usuario(IN usuario VARCHAR(50))
+BEGIN
+  SELECT * FROM Usuarios WHERE usuario = usuario;
+END $$
+
+-- CREATE Usuario
+CREATE PROCEDURE create_usuario(IN usuario VARCHAR(50), IN clave VARCHAR(255))
+BEGIN
+  INSERT INTO Usuarios (usuario, clave) VALUES (usuario, clave);
+END $$
+
 DELIMITER ;
 
 -- ===================================================
@@ -58,19 +71,35 @@ CREATE TABLE Roles (
 INSERT INTO Roles (nombre, descripcion) 
   VALUES ('Administrador', 'Administrador de la productora');
 INSERT INTO Roles (nombre, descripcion) 
-  VALUES ('Agricultor', 'Encargado de árboles, cultivos y suelos');
+  VALUES ('Agricultor', 'Encargado de arboles, cultivos y suelos');
 INSERT INTO Roles (nombre, descripcion) 
-  VALUES ('Científico agrónomo', 'Gestor de producción e impacto ambiental');
+  VALUES ('Cientifico agronomo', 'Gestor de produccion e impacto ambiental');
 INSERT INTO Roles (nombre, descripcion)
-  VALUES ('Inspector', 'Encargado de la inspección del producto y suelos');
+  VALUES ('Inspector', 'Encargado de la inspeccion del producto y suelos');
 INSERT INTO Roles (nombre, descripcion)
   VALUES ('Operario', 'Encargado del manejo del equipo agropecuario');
 INSERT INTO Roles (nombre, descripcion)
-  VALUES ('Recolector', 'Encargado de la recolección del producto');
+  VALUES ('Recolector', 'Encargado de la recoleccion del producto');
 INSERT INTO Roles (nombre, descripcion)
   VALUES ('Supervisor de calidad', 'Encargado de mantener y procurar la calidad del producto');
 INSERT INTO Roles (nombre, descripcion)
-  VALUES ('Técnico agrónomo', 'Encargado del manejo de cultivos, árboles y suelos');
+  VALUES ('Tecnico agrónomo', 'Encargado del manejo de cultivos, arboles y suelos');
+
+DELIMITER $$
+
+-- GET Roles
+CREATE PROCEDURE get_roles()
+BEGIN
+  SELECT * FROM Roles;
+END $$
+
+-- GET Rol por id
+CREATE PROCEDURE get_rol(IN id INT)
+BEGIN
+  SELECT * FROM Roles WHERE id = id;
+END $$
+
+DELIMITER ;
 
 -- ===================================================
 -- Tabla: CargosSociales
@@ -91,23 +120,22 @@ INSERT INTO CargosSociales (nombre, porcentaje_cargo)
   VALUES ('General', '1.5');
 
 DELIMITER $$
-CREATE FUNCTION get_cargos_sociales()
-  RETURNS INT DETERMINISTIC
+
+-- GET Cargo Social
+CREATE PROCEDURE get_cargo_social(IN nombre VARCHAR(50))
 BEGIN
-  RETURN (
-    SELECT porcentaje_cargo 
-    FROM CargosSociales WHERE nombre = 'General'
-  );
+  SELECT * FROM CargosSociales WHERE nombre = nombre;
 END $$
 
 -- MODIFY CargosSociales
-CREATE PROCEDURE modify_cargos_sociales(
+CREATE PROCEDURE modif_cargo_social(
+  IN nombre VARCHAR(50),
   IN porcentaje_cargo DOUBLE(10,2)
 )
 BEGIN
   UPDATE CargosSociales 
   SET porcentaje_cargo = porcentaje_cargo
-  WHERE nombre = 'General';
+  WHERE nombre = nombre;
 END $$
 DELIMITER ;
 
@@ -123,7 +151,8 @@ CREATE TABLE Productos (
   nombre VARCHAR(50) NOT NULL,
   costo DOUBLE(10,2) NOT NULL,
   impuesto DOUBLE(10,2) NOT NULL,
-  CONSTRAINT pk_productos PRIMARY KEY (id)
+  CONSTRAINT pk_productos PRIMARY KEY (id),
+  CONSTRAINT uq_productos UNIQUE (nombre)
 );
 
 DELIMITER $$
@@ -135,15 +164,21 @@ BEGIN
 END $$
 
 -- CREATE Productos
-CREATE PROCEDURE create_productos(
+CREATE PROCEDURE registrar_producto(
     IN id VARCHAR(50),
     IN nombre VARCHAR(50), 
     IN costo DOUBLE(10,2), 
     IN impuesto DOUBLE(10,2)
   )
 BEGIN
-  INSERT INTO Productos (nombre, costo, impuesto)
-    VALUES (nombre, costo, impuesto);
+  INSERT INTO Productos (id, nombre, costo, impuesto)
+    VALUES (id, nombre, costo, impuesto);
+END $$
+
+-- EXISTE Producto
+CREATE PROCEDURE get_producto(IN id VARCHAR(50))
+BEGIN
+  SELECT * FROM Productos WHERE id = id;
 END $$
 
 -- REMOVE Productos
@@ -164,31 +199,31 @@ CREATE TABLE Areas (
   id INT NOT NULL AUTO_INCREMENT,
   nombre VARCHAR(50) NOT NULL,
   dimensiones DOUBLE(15,2) NOT NULL,
-  -- producto_principal VARCHAR(50) NOT NULL,
+  producto_principal VARCHAR(50) NOT NULL,
   CONSTRAINT pk_areas PRIMARY KEY (id),
   CONSTRAINT uq_areas UNIQUE (nombre)
 );
 
-INSERT INTO Areas (nombre, dimensiones) 
-  VALUES ('Cereales', 15.2);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Leguminosas', 20.5);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Frutas', 12.4);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Hortalizas', 18.7);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Verduras', 15.6);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Oleaginosas', 19.5);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Ornamentales', 11.4);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Tuberculosas', 12.5);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Pastos', 11.5);
-INSERT INTO Areas (nombre, dimensiones)
-  VALUES ('Medicinales', 19.5);
+INSERT INTO Areas (nombre, dimensiones, producto_principal) 
+  VALUES ('Cereales', 15.2, 'Trigo');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Leguminosas', 20.5, 'Maiz');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Frutas', 12.4, 'Manzana');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Hortalizas', 18.7, 'Papa');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Verduras', 15.6, 'Pepino');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Oleaginosas', 19.5, 'Aguacate');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Ornamentales', 11.4, 'Cebolla');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Tuberculosas', 12.5, 'Puerro');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Pastos', 11.5, 'Lechuga');
+INSERT INTO Areas (nombre, dimensiones, producto_principal)
+  VALUES ('Medicinales', 19.5, 'Algodon');
 
 DELIMITER $$
 
@@ -218,25 +253,59 @@ CREATE TABLE Empleados (
 );
 
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual) 
-  VALUES ('12345678', 'Juan Perez Diaz', 1, '300000.00');
+  VALUES ('12345678', 'Juan Perez Diaz', 1, 350000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345679', 'Maria Perez Rojas', 2, '350000.00');
+  VALUES ('12345679', 'Maria Perez Rojas', 2, 320000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345670', 'Pedro Rodriguez Diaz', 3, '280000.00');
+  VALUES ('12345670', 'Pedro Rodriguez Diaz', 3, 280000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345671', 'Juanito Salas Mendez', 4, '750000.00');
+  VALUES ('12345671', 'Juanito Salas Mendez', 4, 650000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345672', 'Luis Robles Fernandez', 5, '250000.00');
+  VALUES ('12345672', 'Luis Robles Fernandez', 5, 250000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345673', 'Charlie Perez Diaz', 6, '300000.00');
+  VALUES ('12345673', 'Charlie Perez Diaz', 6, 300000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345674', 'Juanito Chavarria Diaz', 7, '350000.00');
+  VALUES ('12345674', 'Juanito Chavarria Diaz', 7, 350000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345675', 'Marcos Escalante Salas', 8, '280000.00');
+  VALUES ('12345675', 'Marcos Escalante Salas', 8, 280000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345676', 'Sara Mendez Perez', 3, '650000.00');
+  VALUES ('12345676', 'Sara Mendez Perez', 3, 650000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
-  VALUES ('12345677', 'Juanito Perez Mendez', 2, '250000.00');
+  VALUES ('12345677', 'Juanito Perez Mendez', 2, 250000);
+
+DELIMITER $$
+
+-- GET Empleados
+CREATE PROCEDURE get_empleados()
+BEGIN
+  SELECT * FROM Empleados;
+END $$
+
+-- GET Empleados con rol
+CREATE PROCEDURE get_empleados_con_rol()
+BEGIN
+  SELECT Emp.cedula, Emp.nombre_completo,
+         Rol.nombre, Emp.salario_mensual 
+  FROM Empleados Emp 
+  INNER JOIN Roles Rol ON Emp.id_rol = Rol.id;
+END $$
+
+-- GET Empleado por cedula
+CREATE PROCEDURE get_empleado(IN cedula VARCHAR(50))
+BEGIN
+  SELECT * FROM Empleados WHERE cedula = cedula;
+END $$
+
+-- GET Empleado con su rol
+CREATE PROCEDURE get_empleado_con_rol(IN cedula VARCHAR(50))
+BEGIN
+  SELECT Emp.cedula, Emp.nombre_completo, Rol.nombre, Emp.salario_mensual 
+  FROM Empleados Emp
+  INNER JOIN Roles Rol ON Emp.id_rol = Rol.id
+  WHERE Emp.cedula = cedula;
+END $$
+
+DELIMITER ;
 
 -- ===================================================
 -- Tabla: Comercios
@@ -254,6 +323,27 @@ CREATE TABLE Comercios (
 
 INSERT INTO Comercios (cedula, nombre, telefono, num_sig_factura) 
   VALUES ('001', 'Comercio Agrícola', '88888888', 1);
+
+DELIMITER $$
+
+CREATE PROCEDURE get_comercio(IN cedula VARCHAR(50))
+BEGIN
+  SELECT * FROM Comercios WHERE cedula = cedula;
+END $$
+
+CREATE PROCEDURE registrar_comercio(
+    IN cedula VARCHAR(50),
+    IN nombre VARCHAR(50),
+    IN telefono VARCHAR(50),
+    IN num_sig_factura INT
+)
+BEGIN
+  INSERT INTO Comercios (cedula, nombre, telefono, num_sig_factura)
+    VALUES (cedula, nombre, telefono, num_sig_factura);
+END $$
+
+
+DELIMITER ;
 
 -- ===================================================
 -- Tabla: Planillas
