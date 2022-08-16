@@ -30,6 +30,7 @@ void Menu_CN();
 void Menu_CV01();
 void Menu_BA01();
 bool VerificarNumero(char num[]);
+void Pause();
 
 
 /*****Nombre***************************************
@@ -43,7 +44,6 @@ bool VerificarNumero(char num[]);
 **************************************************/
 int main() {
     //revisar lo del fullscreen
-    system ("clear");
     Menu_01();
     return 0;
 }
@@ -59,14 +59,15 @@ int main() {
 * Sin entradas
 **************************************************/
 void Menu_01() {
+    system ("clear");
+    fflush(stdin);
     printf("GESTIÓN DE PRODUCCIÓN AGRÍCOLA [GPA]");
     char opcion_01[BUFFER];
     printf("\n1.Opciones operativas\n2.Opciones administrativas\n>");
     scanf("%s",&opcion_01);
     if (!VerificarNumero(opcion_01)) {
-        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!");
-        printf("[PRESIONE CUALQUIER TECLA PARA CONTINUAR!!!]\n\n");
-        //poner un pause pause();
+        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+        Pause();
         Menu_01();
     }
     int opcion_02 = strtol(opcion_01,NULL,10);
@@ -78,9 +79,8 @@ void Menu_01() {
             Menu_OA1();
             break;
         default:
-            printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!");
-            printf("[PRESIONE CUALQUIER TECLA PARA CONTINUAR!!!]\n\n");
-            //poner pause;
+            printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+            Pause();
             break;
     }
 
@@ -98,6 +98,7 @@ void Menu_01() {
 **************************************************/
 void Menu_OP1() {
     system("clear");
+    fflush(stdin);
     printf("[MENÚ DE OPCIONES OPERATIVAS]\n");
     //se solicita la contraseña
     printf("Ingrese el nombre de usuario y contraseña\nNombre de usuario:");
@@ -123,15 +124,17 @@ void Menu_OP1() {
 **************************************************/
 void Menu_OA1() {
     system("clear");
+    fflush(stdin);
     printf("MENU DE OPCIONES ADMINISTRATIVAS\n");
     printf("1.Valores iniciales\n2.Registro de nomina\n3.Registro de venta de productos\n4.Consulta de nominas\n5.Consulta de ventas\n6.Valance anual\n7.Volver atras\n8.Salir\n>");
     char opcion_01[BUFFER];
     scanf("%s",&opcion_01);
     if (!VerificarNumero(opcion_01)) {
-        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!");
-        printf("[PRESIONE CUALQUIER TECLA PARA CONTINUAR!!!]\n\n");
-        //poner un pause
+        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+        int cont = getchar();
+        Pause();
         Menu_OA1();
+
     }
     int opcion_02 = strtol(opcion_01,NULL,10);
     switch(opcion_02) {
@@ -157,12 +160,12 @@ void Menu_OA1() {
             Menu_01();
             break;
         case 8:
-            return;
+            exit(-1);
         default:
-            printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!");
-            printf("[PRESIONE CUALQUIER TECLA PARA CONTINUAR!!!]\n\n");
-            //poner un pause;
+            printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+            Pause();
             Menu_OA1();
+            break;
     }
 }
 /*****Nombre***************************************
@@ -245,5 +248,13 @@ void Menu_BA01() {}
 bool VerificarNumero(char num[]) {
     for(int i = 0; i < strlen(num); i++) {if(isdigit(num[i])==0) return false;}
     return true;
+}
+
+void Pause() {
+    for (int i=3;i!=0;i--) {
+        printf("[%d]<===[SEGUNDOS PARA CONTINUAR]\n",i);
+        fflush(stdout);
+        sleep(1);
+    }
 }
 
