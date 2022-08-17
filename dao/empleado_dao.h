@@ -108,7 +108,7 @@ Empleado* ObtenerEmpleados() {
 EmpleadoConRol ObtenerEmpleadoConRol(char *cedula) {
     MYSQL *conn = Conectar();
     EmpleadoConRol empleado;
-    empleado.cedula = "ND";
+    strcpy(empleado.cedula, "ND");
     char query[256];
     sprintf(query, "CALL get_empleado_con_rol('%s')", cedula);
     
@@ -135,7 +135,7 @@ EmpleadoConRol ObtenerEmpleadoConRol(char *cedula) {
 Empleado ObtenerEmpleado(char *cedula) {
     MYSQL *conn = Conectar();
     Empleado empleado;
-    empleado.cedula = "ND";
+    strcpy(empleado.cedula, "ND");
     char query[256];
     sprintf(query, "CALL get_empleado('%s')", cedula);
     
