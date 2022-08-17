@@ -10,6 +10,7 @@ DROP DATABASE IF EXISTS pdvAgricola;
 CREATE DATABASE IF NOT EXISTS pdvAgricola;
 USE pdvAgricola;
 SET GLOBAL sql_mode = '';
+SET SQL_SAFE_UPDATES = 0;
 -- ALTER DATABASE pdvAgricola CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 -- ===================================================
@@ -353,6 +354,7 @@ DELIMITER ;
 CREATE TABLE Planillas (
   id INT NOT NULL AUTO_INCREMENT,
   fecha_nomina DATE NOT NULL,
+  carga_social DOUBLE(10,2) NOT NULL,
   CONSTRAINT pk_planillas PRIMARY KEY (id),
   CONSTRAINT uq_planillas UNIQUE (fecha_nomina)
 );
@@ -372,10 +374,19 @@ BEGIN
   WHERE YEAR(fecha_nomina) = anio;
 END $$
 
--- CREATE Planilla
-CREATE PROCEDURE create_planilla(IN fecha_nomina DATE)
+-- REGISTRAR Planilla y AGARRAR EL MONTO DE CARGA SOCIAL DE LA TABLA
+CREATE PROCEDURE registrar_planilla(IN fecha_nomina DATE)
 BEGIN
-  INSERT INTO Planillas (fecha_nomina) VALUES (fecha_nomina);
+    DECLARE monto_carga_social DOUBLE(10,2);
+    SELECT porcentaje_cargo INTO monto_carga_social FROM CargosSociales WHERE id = 1;
+    INSERT INTO Planillas (fecha_nomina, carga_social)
+      VALUES (fecha_nomina, monto_carga_social);
+END $$
+
+-- GET Planilla por fecha
+CREATE PROCEDURE get_planilla_por_fecha(IN fecha_nomina DATE)
+BEGIN
+  SELECT * FROM Planillas WHERE fecha_nomina = fecha_nomina;
 END $$
 
 DELIMITER ;
@@ -415,6 +426,64 @@ BEGIN
   EXECUTE stmt;
 END $$
 
+-- Obtiene los empleados de una planilla por fecha
+CREATE PROCEDURE get_planXemp_por_fecha(IN fecha_nomina DATE)
+BEGIN
+  SELECT Emp.cedula, Emp.nombre_completo, Emp.salario_mensual, Rol.nombre
+    FROM Empleados Emp
+    INNER JOIN Roles Rol ON Emp.id_rol = Rol.id
+    INNER JOIN PlanillasXEmpleados PlaXEmp ON Emp.cedula = PlaXEmp.cedula_empleado
+    INNER JOIN Planillas Pla ON PlaXEmp.id_planilla = Pla.id
+    WHERE Pla.fecha_nomina = fecha_nomina;
+END $$
+
+-- Obtener cantidad de empleados de una planilla
+CREATE PROCEDURE get_cant_empleados_planilla(IN id_planilla INT)
+BEGIN
+  SELECT COUNT(*) FROM PlanillasXEmpleados 
+  WHERE id_planilla = id_planilla;
+END $$
+
+-- Obtener cantidad de empleados de una planilla por fecha
+CREATE PROCEDURE get_cant_empleados_por_fecha(IN fecha_nomina DATE)
+BEGIN
+  SELECT COUNT(*) FROM PlanillasXEmpleados 
+  INNER JOIN Planillas Pla ON PlanillasXEmpleados.id_planilla = Pla.id
+  WHERE Pla.fecha_nomina = fecha_nomina;
+END $$
+
+-- CREATE PlanillasXEmpleados
+CREATE PROCEDURE create_planXemp(IN id_planilla INT, IN cedula_empleado VARCHAR(50))
+BEGIN
+  INSERT INTO PlanillasXEmpleados (id_planilla, cedula_empleado)
+    VALUES (id_planilla, cedula_empleado);
+END $$
+
+-- REGISTRAR Empleado en planilla por fecha
+CREATE PROCEDURE create_planXemp_fecha(IN fecha_nomina DATE, IN cedula_empleado VARCHAR(50))
+BEGIN
+  DECLARE id_planilla INT;
+  SELECT id INTO id_planilla FROM Planillas WHERE fecha_nomina = fecha_nomina;
+  INSERT INTO PlanillasXEmpleados (id_planilla, cedula_empleado)
+    VALUES (id_planilla, cedula_empleado);
+END $$
+
+-- REMOVE Empleado de planilla por fecha
+CREATE PROCEDURE remove_planXemp_fecha(IN p_fecha DATE, IN p_cedula VARCHAR(50))
+BEGIN
+  DECLARE id_planilla INT;
+  SELECT id INTO id_planilla FROM Planillas WHERE fecha_nomina = p_fecha;
+  DELETE FROM PlanillasXEmpleados 
+  WHERE id_planilla = id_planilla AND cedula_empleado = p_cedula;
+END $$
+
+-- REMOVE PlanillasXEmpleados
+CREATE PROCEDURE remove_planXemp(IN id_planilla INT, IN cedula_empleado VARCHAR(50))
+BEGIN
+  DELETE FROM PlanillasXEmpleados 
+  WHERE id_planilla = id_planilla AND cedula_empleado = cedula_empleado;
+END $$
+
 DELIMITER ;
 
 -- ===================================================
@@ -426,51 +495,75 @@ CREATE TABLE Facturas (
   id INT NOT NULL AUTO_INCREMENT,
   nombre_cliente VARCHAR(50) NOT NULL,
   fecha_facturacion DATE NOT NULL,
-  area_produccion VARCHAR(50) NOT NULL,
+  id_area int NOT NULL,
   cedula_comercio VARCHAR(50) NOT NULL,
   subtotal DOUBLE(15,2) NOT NULL,
   impuesto DOUBLE(15,2) NOT NULL,
   total DOUBLE(15,2) NOT NULL,
   CONSTRAINT pk_facturas PRIMARY KEY (id),
   CONSTRAINT fk_fact_comercio FOREIGN KEY (cedula_comercio)
-    REFERENCES Comercios(cedula) ON DELETE CASCADE
+    REFERENCES Comercios(cedula) ON DELETE CASCADE,
+  CONSTRAINT fk_fact_area FOREIGN KEY (id_area)
+    REFERENCES Areas(id) ON DELETE CASCADE
 );
 
 DELIMITER $$
 
--- GET Facturas
-CREATE PROCEDURE get_facturas()
-BEGIN
-  SELECT Fac.id, Fac.nombre_cliente, Fac.fecha_facturacion, 
-         Fac.area_produccion, Fac.cedula_comercio,
-         Com.nombre, Com.telefono, Com.num_sig_factura, 
-         Fac.subtotal, Fac.impuesto, Fac.total
-  FROM Facturas Fac
-  INNER JOIN Comercios Com ON Fac.cedula_comercio = Com.cedula;
-END $$
-
--- CREATE Factura
+-- REGISTRAR Factura
 CREATE PROCEDURE create_factura(
-  IN nombre_cliente VARCHAR(50), 
-  IN fecha_facturacion DATE, 
-  IN cedula_comercio VARCHAR(50), 
-  IN subtotal DOUBLE, 
-  IN impuesto DOUBLE, 
-  IN total DOUBLE
+    IN nombre_cliente VARCHAR(50), IN fecha_facturacion DATE, 
+    IN id_area INT, IN cedula_comercio VARCHAR(50), 
+    IN subtotal DOUBLE(15,2), IN impuesto DOUBLE(15,2), 
+    IN total DOUBLE(15,2)
 )
 BEGIN
-  INSERT INTO Facturas (
-    nombre_cliente, fecha_facturacion, cedula_comercio, 
-    subtotal, impuesto, total
-  )
-  VALUES (
-    nombre_cliente, fecha_facturacion, cedula_comercio,
-    subtotal, impuesto, total
-  );
-  SET @id = LAST_INSERT_ID();
-  UPDATE Comercios SET num_sig_factura = num_sig_factura + 1 WHERE cedula = cedula_comercio;
-  SELECT * FROM Facturas WHERE id = @id;
+  INSERT INTO Facturas (nombre_cliente, fecha_facturacion, id_area, 
+	cedula_comercio, subtotal, impuesto, total)
+    VALUES (nombre_cliente, fecha_facturacion, id_area, 
+    cedula_comercio, subtotal, impuesto, total);
+
+  UPDATE Comercios SET num_sig_factura = num_sig_factura + 1 
+  WHERE cedula = cedula_comercio;
+  SET @id_factura = LAST_INSERT_ID();
+  SELECT @id_factura;
 END $$
+
+-- GET Factura por id
+CREATE PROCEDURE get_factura_por_id(IN id INT)
+BEGIN
+  SELECT Com.nombre, Com.cedula, Com.telefono,
+         Fac.nombre_cliente, Fac.fecha_facturacion,
+         Area.nombre, Fac.id_area, Fac.subtotal, Fac.impuesto, Fac.total
+  FROM Facturas Fac
+  INNER JOIN Comercios Com ON Fac.cedula_comercio = Com.cedula
+  INNER JOIN Areas Area ON Fac.id_area = Area.id
+  WHERE Fac.id = id;
+END $$
+
+-- GET Facturas por anio
+CREATE PROCEDURE get_facturas_por_anio(IN anio INT)
+BEGIN
+  SELECT Com.nombre, Com.cedula, Com.telefono,
+         Fac.id, Fac.nombre_cliente, Fac.fecha_facturacion,
+         Area.nombre, Fac.subtotal, Fac.impuesto, Fac.total
+  FROM Facturas Fac
+  INNER JOIN Comercios Com ON Fac.cedula_comercio = Com.cedula
+  INNER JOIN Areas Area ON Fac.id_area = Area.id
+  WHERE YEAR(Fac.fecha_facturacion) = anio;
+END $$
+
+-- GET Facturas
+-- Obtiene todas las facturas de un comercio
+CREATE PROCEDURE get_facturas(IN p_ced_comercio VARCHAR(50))
+BEGIN
+  SELECT Com.nombre, Com.cedula, Com.telefono,
+         Fac.id, Fac.nombre_cliente, Fac.fecha_facturacion,
+         Area.nombre, Fac.subtotal, Fac.impuesto, Fac.total
+    FROM Facturas Fac
+    INNER JOIN Comercios Com ON Fac.cedula_comercio = Com.cedula
+    INNER JOIN Areas Area ON Fac.id_area = Area.id
+    WHERE Fac.cedula_comercio = p_ced_comercio;    
+END$$
 
 DELIMITER ;
 
@@ -486,32 +579,35 @@ CREATE TABLE FacturasXDetalleProducto (
   cantidad INT NOT NULL,
   CONSTRAINT pk_factXdetprod PRIMARY KEY (id),
   CONSTRAINT fk_factXdetprod_fact FOREIGN KEY (id_factura)
-    REFERENCES Facturas(id) ON DELETE CASCADE,
+    REFERENCES Facturas(id) ON DELETE RESTRICT,
   CONSTRAINT fk_factXdetprod_prod FOREIGN KEY (id_producto)
-    REFERENCES Productos(id) ON DELETE CASCADE,
+    REFERENCES Productos(id) ON DELETE RESTRICT,
   CONSTRAINT uq_factXdetprod UNIQUE (id_producto, id_factura)
 );
 
 DELIMITER $$
 
+-- GET cantidad de detalles de una factura
+CREATE PROCEDURE get_cantidad_detalles_factura(IN id_factura INT)
+BEGIN
+  SELECT COUNT(*) FROM FacturasXDetalleProducto
+  WHERE id_factura = id_factura;
+END $$
+
 -- get FacturasXDetalleProducto
+-- Obtiene todos los detalles de productos de una factura
 CREATE PROCEDURE get_factXdetprod(IN id_factura INT)
 BEGIN
-  DECLARE strQuery VARCHAR(555);
-  SET @strQuery = CONCAT(
-    'SELECT Prod.id, Prod.nombre, Prod.precio, ', 
-    'FactXDetProd.cantidad, FactXDetProd.id_factura ',
-    'FROM Productos Prod ',
-    'INNER JOIN FacturasXDetalleProducto FactXDetProd ON Prod.id = FactXDetProd.id_producto ',
-    'WHERE FactXDetProd.id_factura = ', id_factura
-  );
-  PREPARE stmt FROM @strQuery;
-  EXECUTE stmt;
+  SELECT Prod.id, Prod.nombre, Prod.costo,
+         Prod.impuesto, FacXdet.cantidad
+  FROM FacturasXDetalleProducto FacXdet
+  INNER JOIN Productos Prod ON FacXdet.id_producto = Prod.id
+  WHERE FacXdet.id_factura = id_factura;
 END $$
 
 -- create FacturasXDetalleProducto
 CREATE PROCEDURE create_factXdetprod(
-  IN id_producto INT, 
+  IN id_producto VARCHAR(50), 
   IN id_factura INT, 
   IN cantidad INT
 )
