@@ -1,12 +1,30 @@
+/*****Datos administrativos*******************************
+* Nombre del archivo: operador_dao
+* Tipo de archivo: archivo de encabezado (.h)
+* Proyecto: Sistema de producción agrícola
+* Autor: Alex Sánchez Céspedes - Hansol Antay
+* Empresa: Instituto Tecnológico de Costa Rica
+*****Descripción******************************************
+* Archivo para el acceso a los datos de los operadores
+* del comercio en la base de datos.
+*****Versión**********************************************
+* ## | Fecha y hora | Autor
+* 15/08/2022
+**********************************************************/
+
 #ifndef OPERADOR_DAO_H
 #define OPERADOR_DAO_H
 
 #include "./conexion_mysql.h"
 
+/**
+ * @struct operador
+ * @brief Los operadores o usuarios del sistema.
+ */
 struct operador {
-    int id;
-    char usuario[51];
-    char clave[256];
+    int id; // Id en la tabla
+    char usuario[51]; // Nombre de usuario
+    char clave[256]; // Clave del usuario
 };
 
 typedef struct operador Operador;
@@ -14,6 +32,19 @@ typedef struct operador Operador;
 static MYSQL_RES *res;
 static MYSQL_ROW row;
 
+/*****Nombre************************************************************
+* RegistrarOperador
+*****Descripción********************************************************
+* Registra un nuevo operador en la base de datos.
+*
+* No es requerido utilizar ya que habrá un solo operador en la base
+* de datos, pero se puede utilizar en una futura extensión del programa.
+*****Retorno************************************************************
+* Un valor booleano (bool) que indica el éxito (true) o fracaso (false)
+* del registro.
+*****Entradas***********************************************************
+* - (Operador operador) El nuevo operador que se desee registrar.
+************************************************************************/
 bool RegistrarOperador(Operador operador) {
     MYSQL* conn = Conectar();
 
@@ -34,6 +65,17 @@ bool RegistrarOperador(Operador operador) {
     return true;
 }
 
+/*****Nombre************************************************************
+* ObtenerOperador
+*****Descripción********************************************************
+* Obtiene toda la información del (Operador) que se obtiene de la
+* base de datos, buscándolo por su nombre de usuario.
+*****Retorno************************************************************
+* Una estructura (Operador) con toda la información obtenida de la base
+* de datos.
+*****Entradas***********************************************************
+* - (char *usuario) Nombre de usuario del operador.
+************************************************************************/
 Operador ObtenerOperador(char* usuario) {
     MYSQL *conn = Conectar();
 
@@ -67,6 +109,16 @@ Operador ObtenerOperador(char* usuario) {
     return operador;
 }
 
+/*****Nombre************************************************************
+* ValidarOperador
+*****Descripción********************************************************
+* Valida la información de registro o credenciales en la base de datos.
+*****Retorno************************************************************
+* Un valor booleano que indica si se dieron las credenciales
+* correctas (true) o si no coinciden (false) el usuario-contraseña.
+*****Entradas***********************************************************
+* - (Operador operador) El operador que se desea logear/verificar.
+************************************************************************/
 bool ValidarOperador(Operador operador) {
     Operador operador_db = ObtenerOperador(operador.usuario);
 
@@ -81,21 +133,5 @@ bool ValidarOperador(Operador operador) {
     }
     return true;
 }
-
-/*int main() {
-
-    MYSQL *conn = conectar();
-
-    if (mysql_query(conn, "CALL get_x")) {
-        fprintf(stderr, "%s\n", mysql_error(conn));
-        exit(1);
-    }
-
-    res = mysql_use_result(conn);
-    while ((row = mysql_fetch_row(res)) != NULL)
-    {
-        printf("%s | %s\n", row[0], row[1]);
-    }
-}*/
 
 #endif // OPERADOR_DAO_H

@@ -1,12 +1,30 @@
+/*****Datos administrativos*******************************
+* Nombre del archivo: rol_dao
+* Tipo de archivo: archivo de encabezado (.h)
+* Proyecto: Sistema de producción agrícola
+* Autor: Alex Sánchez Céspedes - Hansol Antay
+* Empresa: Instituto Tecnológico de Costa Rica
+*****Descripción******************************************
+* Archivo para el acceso a los datos de los roles/puestos
+* de los empleados del comercio.
+*****Versión**********************************************
+* ## | Fecha y hora | Autor
+* 15/08/2022
+**********************************************************/
+
 #ifndef ROL_DAO_H
 #define ROL_DAO_H
 
 #include "./conexion_mysql.h"
 
+/**
+ * @struct rol
+ * @brief Rol o puesto de los empleados en la base de datos.
+ */
 struct rol {
-    int id;
-    char nombre[51];
-    char descripcion[256];
+    int id; // Id del rol en la tabla.
+    char nombre[51]; // Nombre del rol.
+    char descripcion[256]; // Breve descripción del rol.
 };
 
 typedef struct rol Rol;
@@ -14,6 +32,15 @@ typedef struct rol Rol;
 static MYSQL_RES *res;
 static MYSQL_ROW row;
 
+/*****Nombre************************************************************
+* ObtenerRoles
+*****Descripción********************************************************
+* Obtiene todos los roles que estén registrados en la base de datos.
+*****Retorno************************************************************
+* Una lista (puntero) de los roles en base de datos.
+*****Entradas***********************************************************
+* No tiene entradas.
+************************************************************************/
 Rol* ObtenerRoles() {
 
     MYSQL *conn = Conectar();
@@ -45,6 +72,16 @@ Rol* ObtenerRoles() {
     return roles;
 }
 
+/*****Nombre************************************************************
+* ObtenerRol
+*****Descripción********************************************************
+* Obtiene la información registrada en base de datos de un rol en
+* específico.
+*****Retorno************************************************************
+* Un (Rol) con toda su información.
+*****Entradas***********************************************************
+* - (int idRol) El id del rol en la tabla.
+************************************************************************/
 Rol ObtenerRol(int idRol) {
     MYSQL *conn = Conectar();
     Rol rol;
@@ -69,6 +106,16 @@ Rol ObtenerRol(int idRol) {
     return rol;
 }
 
+/*****Nombre************************************************************
+* ObtenerCantidadRoles
+*****Descripción********************************************************
+* Obtiene la cantidad de roles que están registrados en la base de
+* datos.
+*****Retorno************************************************************
+* Un número (int) con la cantidad total de roles registrados.
+*****Entradas***********************************************************
+* No tiene entradas.
+************************************************************************/
 int ObtenerCantidadRoles() {
     MYSQL *conn = Conectar();
 

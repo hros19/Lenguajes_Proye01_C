@@ -1,8 +1,25 @@
+/*****Datos administrativos*******************************
+* Nombre del archivo: comercio_dao
+* Tipo de archivo: archivo de encabezado (.h)
+* Proyecto: Sistema de producción agrícola
+* Autor: Alex Sánchez Céspedes - Hansol Antay
+* Empresa: Instituto Tecnológico de Costa Rica
+*****Descripción******************************************
+* Archivo para el acceso a los datos del comercio.
+*****Versión**********************************************
+* ## | Fecha y hora | Autor
+* 15/08/2022
+**********************************************************/
+
 #ifndef COMERCIO_DAO_H
 #define COMERCIO_DAO_H
 
 #include "./conexion_mysql.h"
 
+/**
+ * @struct comercio
+ * @brief Características o información básica del comercio.
+ */
 struct comercio {
     char cedulaJuridica[51];
     char nombre[51];
@@ -15,6 +32,19 @@ typedef struct comercio Comercio;
 static MYSQL_RES *res;
 static MYSQL_ROW row;
 
+/*****Nombre************************************************************
+* RegistrarComercio
+*****Descripción********************************************************
+* Permite registrar un nuevo comercio en el sistema, originalmente
+* la aplicación no requiere registrar comercios pero se da para
+* la posibilidad de extender el programa más adelante.
+*****Retorno************************************************************
+* Un valor booleano (bool) que indica el éxito o fallo del registro del
+* comercio en la base de datos.
+*****Entradas***********************************************************
+* - (Comercio comercio) el objeto/estructura comercio que se desea
+*                       registrar en la base de datos.
+************************************************************************/
 bool RegistrarComercio(Comercio comercio) {
     MYSQL* conn = Conectar();
 
@@ -37,6 +67,20 @@ bool RegistrarComercio(Comercio comercio) {
     return true;
 }
 
+/*****Nombre************************************************************
+* ObtenerInfoComercio
+*****Descripción********************************************************
+* Busca el comercio utilizando la cédula jurídica del mismo y retorna 
+* toda la información del mismo en un objeto/estructura Comercio.
+*
+* Nota: recordar que la aplicación está pensada para utilizar un solo
+*       comercio para las facturas.
+*****Retorno************************************************************
+* Un (Comercio) con toda la información que se almacenó en la base de
+* datos.
+*****Entradas***********************************************************
+* - (char *cedulaJuridica) La cédula del comercio que estamos buscando.
+************************************************************************/
 Comercio ObtenerInfoComercio(char *cedulaJuridica) {
     MYSQL *conn = Conectar();
     Comercio comercio;

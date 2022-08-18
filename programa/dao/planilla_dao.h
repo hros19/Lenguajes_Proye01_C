@@ -1,8 +1,26 @@
+/*****Datos administrativos*******************************
+* Nombre del archivo: planilla_dao
+* Tipo de archivo: archivo de encabezado (.h)
+* Proyecto: Sistema de producción agrícola
+* Autor: Alex Sánchez Céspedes - Hansol Antay
+* Empresa: Instituto Tecnológico de Costa Rica
+*****Descripción******************************************
+* Archivo para el acceso a los datos de las planillas
+* del comercio en la base de datos.
+*****Versión**********************************************
+* ## | Fecha y hora | Autor
+* 15/08/2022
+**********************************************************/
+
 #ifndef PLANILLA_DAO_H
 #define PLANILLA_DAO_H
 
 #include "./empleado_dao.h"
 
+/**
+ * @struct fecha
+ * @brief Una simple estructura de fecha.
+ */
 struct fecha {
     int anio;
     int mes;
@@ -11,11 +29,15 @@ struct fecha {
 
 typedef struct fecha Fecha;
 
+/**
+ * @struct planilla
+ * @brief Una planilla registrada del comercio
+ */
 struct planilla {
-    int id;
-    Fecha fecha;
-    double monto_carga_social;
-    EmpleadoConRol* empleadosConRol;
+    int id; // Id de la planilla en la tabla.
+    Fecha fecha; // Fecha correspondiente a la planilla.
+    double monto_carga_social; // El monto de la carga social para la planilla.
+    EmpleadoConRol* empleadosConRol; // Lista de empleados de la planilla.
 };
 
 typedef struct planilla Planilla;
@@ -23,6 +45,16 @@ typedef struct planilla Planilla;
 static MYSQL_RES *res;
 static MYSQL_ROW row;
 
+/*****Nombre************************************************************
+* RegistrarPlanilla
+*****Descripción********************************************************
+* Registra una nueva planilla en la base de datos.
+*****Retorno************************************************************
+* Un valor booleano (bool) que indica el éxito (true) o fracaso (false)
+* del registro.
+*****Entradas***********************************************************
+* - (Planilla planilla) La nueva planilla que se desea registrar.
+************************************************************************/
 bool RegistrarPlanilla(Planilla planilla) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -52,6 +84,20 @@ bool RegistrarPlanilla(Planilla planilla) {
     return true;
 }
 
+/*****Nombre************************************************************
+* RegistrarEmpleadoAPlanilla
+*****Descripción********************************************************
+* Registra un empleado a una planilla existente, utilizando la fecha
+* que se indicó en la planilla.
+*****Retorno************************************************************
+* Un valor booleano (bool) que indica el éxito (true) o fracaso (false)
+* del registro.
+*****Entradas***********************************************************
+* - (Fecha fecha) La fecha de la planilla de la cuál se desea registrar
+*                 al empleado.
+* - (char *cedula_empleado) La cédula del empleado que se desea
+*                           registrar.
+************************************************************************/
 bool RegistrarEmpleadoAPlanilla(Fecha fecha, char *cedula_empleado) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -79,6 +125,17 @@ bool RegistrarEmpleadoAPlanilla(Fecha fecha, char *cedula_empleado) {
     return true;
 }
 
+/*****Nombre************************************************************
+* EliminarEmpleadoDePlanilla
+*****Descripción********************************************************
+* Elimina un empleado en específico de una planilla existente.
+*****Retorno************************************************************
+* Un valor booleano (bool) que indica el éxito (true) o fracaso (false)
+* del borrado.
+*****Entradas***********************************************************
+* - (Fecha fecha) La fecha de la planilla que se desea modificar.
+* - (char *cedula_empleado) La cédula del empleado que se desea remover.
+************************************************************************/
 bool EliminarEmpleadoDePlanilla(Fecha fecha, char *cedula_empleado) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -106,6 +163,16 @@ bool EliminarEmpleadoDePlanilla(Fecha fecha, char *cedula_empleado) {
     return true;
 }
 
+/*****Nombre************************************************************
+* ObtenerPlanillaPorFecha
+*****Descripción********************************************************
+* Obtiene la estructura (Planilla) por medio de una fecha indicada.
+*****Retorno************************************************************
+* Una estructura (Planilla) con toda la información obtenida desde la
+* base de datos.
+*****Entradas***********************************************************
+* - (Fecha fecha) La fecha de la planilla que se desea buscar.
+************************************************************************/
 Planilla ObtenerPlanillaPorFecha(Fecha fecha) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -152,6 +219,16 @@ Planilla ObtenerPlanillaPorFecha(Fecha fecha) {
     return planilla;
 }
 
+/*****Nombre************************************************************
+* ObtenerCantEmpleadosPorPlanilla
+*****Descripción********************************************************
+* Obtiene la cantidad de empleados que están asignados a una planilla
+* en específico.
+*****Retorno************************************************************
+* Un número (int) con la cantidad de empleados de la planilla.
+*****Entradas***********************************************************
+* - (int idPlanilla) El identificador de la planilla en la tabla.
+************************************************************************/
 int ObtenerCantEmpleadosPorPlanilla(int idPlanilla) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -180,6 +257,17 @@ int ObtenerCantEmpleadosPorPlanilla(int idPlanilla) {
     return cant_empleados;
 }
 
+/*****Nombre************************************************************
+* ObtenerCantEmpleadosPorFecha
+*****Descripción********************************************************
+* Obtiene la cantidad de empleados que están registrados en una
+* planilla por medio de una fecha indicada.
+*****Retorno************************************************************
+* Un número (int) con la cantidad de empleados registrados en dicha
+* planilla.
+*****Entradas***********************************************************
+* - (Fecha fecha) La fecha de la planilla que se desea consultar.
+************************************************************************/
 int ObtenerCantEmpleadosPorFecha(Fecha fecha) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -216,6 +304,17 @@ int ObtenerCantEmpleadosPorFecha(Fecha fecha) {
     return cant_empleados;
 }
 
+/*****Nombre************************************************************
+* ObtenerEmpleadoDePlanilla
+*****Descripción********************************************************
+* Obtiene una lista (puntero) con todos los (EmpleadoConRol - empleado_dao.h)
+* que están asignados a una planilla en específico buscando la planilla
+* por una fecha en específico.
+*****Retorno************************************************************
+* La lista de (EmpleadoConRol) que están asignados a la planilla.
+*****Entradas***********************************************************
+* - (Fecha fecha) La fecha de la planilla que se desea buscar.
+************************************************************************/
 EmpleadoConRol* ObtenerEmpleadosDePlanilla(Fecha fecha) {
     MYSQL *conn = Conectar();
     char query[256];

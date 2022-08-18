@@ -34,19 +34,41 @@ CREATE TABLE Usuarios (
 );
 
 DELIMITER $$
--- GET Usuarios
+
+-- ===================================================
+-- PROCEDURE: get_usuarios
+-- Descripción: Obtiene todos los usuarios o operadores
+--              del sistema.
+
+-- Nota: La clave se almacena encriptada.
+-- ===================================================
 CREATE PROCEDURE get_usuarios()
 BEGIN
   SELECT * FROM Usuarios;
 END $$
 
--- GET Usuario por nombre de usuario
+-- ===================================================
+-- PROCEDURE: get_usuario
+-- Descripción: Obtiene un usuario en específico
+--              buscándolo por su usuario en la tabla.
+-- Entradas:
+--    - IN usuario VARCHAR(50): nombre de usuario
+-- 
+-- ===================================================
 CREATE PROCEDURE get_usuario(IN usuario VARCHAR(50))
 BEGIN
   SELECT * FROM Usuarios WHERE usuario = usuario;
 END $$
 
--- CREATE Usuario
+-- ===================================================
+-- PROCEDURE: create_usuario
+-- Descripción: Crea o registra un nuevo usuario
+--              en la tabla.
+-- Entradas:
+--    - IN usuario VARCHAR(50): nombre de usuario
+--    - IN clave VARCHAR(255): clave encriptada.
+-- 
+-- ===================================================
 CREATE PROCEDURE create_usuario(IN usuario VARCHAR(50), IN clave VARCHAR(255))
 BEGIN
   INSERT INTO Usuarios (usuario, clave) VALUES (usuario, clave);
@@ -69,6 +91,8 @@ CREATE TABLE Roles (
   CONSTRAINT uq_roles UNIQUE (nombre)
 );
 
+-- Valores por defecto de la aplicación.
+
 INSERT INTO Roles (nombre, descripcion) 
   VALUES ('Administrador', 'Administrador de la productora');
 INSERT INTO Roles (nombre, descripcion) 
@@ -88,7 +112,10 @@ INSERT INTO Roles (nombre, descripcion)
 
 DELIMITER $$
 
--- GET Roles
+-- ===================================================
+-- PROCEDURE: get_roles
+-- Descripción: Obtiene todos los roles de la tabla.
+-- ===================================================
 CREATE PROCEDURE get_roles()
 BEGIN
   SELECT * FROM Roles;
@@ -117,18 +144,36 @@ CREATE TABLE CargosSociales (
   CONSTRAINT uq_cargos_sociales UNIQUE (nombre)
 );
 
+-- Valor por defecto de la carga social de los salarios.
+
 INSERT INTO CargosSociales (nombre, porcentaje_cargo) 
   VALUES ('General', '1.5');
 
 DELIMITER $$
 
--- GET Cargo Social
+-- ===================================================
+-- PROCEDURE: get_cargo_social
+-- Descripción: Obtiene el cargo social buscándolo por
+--              su nombre en la tabla.
+-- Entradas:
+--    - IN usuario VARCHAR(50): el nombre del cargo social.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_cargo_social(IN nombre VARCHAR(50))
 BEGIN
   SELECT * FROM CargosSociales WHERE nombre = nombre;
 END $$
 
--- MODIFY CargosSociales
+-- ===================================================
+-- PROCEDURE: modif_cargo_social
+-- Descripción: Modifica el valor de un cargo social
+--              en específico.
+-- Entradas:
+--    - IN nombre VARCHAR(50): nombre del cargo social.
+--    - IN porcentaje_cargo DOUBLE(10, 2): nuevo porcentaje
+--           del cargo social.
+-- 
+-- ===================================================
 CREATE PROCEDURE modif_cargo_social(
   IN nombre VARCHAR(50),
   IN porcentaje_cargo DOUBLE(10,2)
@@ -158,13 +203,27 @@ CREATE TABLE Productos (
 
 DELIMITER $$
 
--- GET Productos
+-- ===================================================
+-- PROCEDURE: get_productos.
+-- Descripción: Obtiene todos los productos registrados
+--              en la base de datos.
+-- ===================================================
 CREATE PROCEDURE get_productos()
 BEGIN
   SELECT * FROM Productos;
 END $$
 
--- CREATE Productos
+-- ===================================================
+-- PROCEDURE: registrar_producto
+-- Descripción: Crea o registra un nuevo producto
+--              en la tabla.
+-- Entradas:
+--    - IN id VARCHAR(50): Id del producto.
+--    - IN nombre VARCHAR(50): Nombre del producto.
+--    - IN costo DOUBLE(10,2): Costo del producto.
+--    - IN impuesto DOUBLE(10,2): Impuesto porcentual.
+-- 
+-- ===================================================
 CREATE PROCEDURE registrar_producto(
     IN id VARCHAR(50),
     IN nombre VARCHAR(50), 
@@ -176,13 +235,23 @@ BEGIN
     VALUES (id, nombre, costo, impuesto);
 END $$
 
--- EXISTE Producto
+-- ===================================================
+-- PROCEDURE: get_producto
+-- Descripción: Obtiene un producto en específico.
+-- Entradas:
+--    - IN id VARCHAR(50): Id del producto.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_producto(IN id VARCHAR(50))
 BEGIN
   SELECT * FROM Productos WHERE id = id;
 END $$
 
--- REMOVE Productos
+-- ===================================================
+-- PROCEDURE: remove_productos
+-- Descripción: Elimina todos los productos de la tabla.
+-- 
+-- ===================================================
 CREATE PROCEDURE remove_productos()
 BEGIN
   DELETE FROM Productos;
@@ -204,6 +273,8 @@ CREATE TABLE Areas (
   CONSTRAINT pk_areas PRIMARY KEY (id),
   CONSTRAINT uq_areas UNIQUE (nombre)
 );
+
+-- Valores por defecto de las áreas.
 
 INSERT INTO Areas (nombre, dimensiones, producto_principal) 
   VALUES ('Cereales', 15.2, 'Trigo');
@@ -228,7 +299,11 @@ INSERT INTO Areas (nombre, dimensiones, producto_principal)
 
 DELIMITER $$
 
--- GET Areas
+-- ===================================================
+-- PROCEDURE: get_areas
+-- Descripción: Obtiene todas las áreas registradas
+-- 
+-- ===================================================
 CREATE PROCEDURE get_areas()
 BEGIN
   SELECT * FROM Areas;
@@ -253,6 +328,8 @@ CREATE TABLE Empleados (
     REFERENCES Roles(id) ON DELETE RESTRICT
 );
 
+-- Valores por defecto de los empleados.
+
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual) 
   VALUES ('12345678', 'Juan Perez Diaz', 1, 350000);
 INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
@@ -276,13 +353,22 @@ INSERT INTO Empleados (cedula, nombre_completo, id_rol, salario_mensual)
 
 DELIMITER $$
 
--- GET Empleados
+-- ===================================================
+-- PROCEDURE: get_empleados
+-- Descripción: Obtiene todos los empleados registrados.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_empleados()
 BEGIN
   SELECT * FROM Empleados;
 END $$
 
--- GET Empleados con rol
+-- ===================================================
+-- PROCEDURE: get_empleados_por_rol
+-- Descripción: Obtiene todos los empleados registrados
+--              con su rol.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_empleados_con_rol()
 BEGIN
   SELECT Emp.cedula, Emp.nombre_completo,
@@ -291,13 +377,26 @@ BEGIN
   INNER JOIN Roles Rol ON Emp.id_rol = Rol.id;
 END $$
 
--- GET Empleado por cedula
+-- ===================================================
+-- PROCEDURE: get_empleado
+-- Descripción: Obtiene un empleado registrado.
+-- Entradas:
+--    - IN cedula VARCHAR(50): cedula del empleado a buscar.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_empleado(IN cedula VARCHAR(50))
 BEGIN
   SELECT * FROM Empleados WHERE cedula = cedula;
 END $$
 
--- GET Empleado con su rol
+-- ===================================================
+-- PROCEDURE: get_empleado_con_rol
+-- Descripción: Obtiene la información de un empleado
+--              con su rol respectivo.
+-- Entradas:
+--    - IN cedula VARCHAR(50): cedula del empleado a buscar.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_empleado_con_rol(IN cedula VARCHAR(50))
 BEGIN
   SELECT Emp.cedula, Emp.nombre_completo, Rol.nombre, Emp.salario_mensual 
@@ -322,16 +421,35 @@ CREATE TABLE Comercios (
   CONSTRAINT uq_comercios UNIQUE (nombre)
 );
 
+-- Valores por defecto del comercio.
+
 INSERT INTO Comercios (cedula, nombre, telefono, num_sig_factura) 
   VALUES ('001', 'Comercio Agrícola', '88888888', 1);
 
 DELIMITER $$
 
+-- ===================================================
+-- PROCEDURE: get_comercio
+-- Descripción: Obtienen la información del local comercial agrícola.
+-- Entradas:
+--    - IN cedula VARCHAR(50): cedula del local comercial agrícola.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_comercio(IN cedula VARCHAR(50))
 BEGIN
   SELECT * FROM Comercios WHERE cedula = cedula;
 END $$
 
+-- ===================================================
+-- PROCEDURE: registrar_comercio
+-- Descripción: Registra un local comercial agrícola.
+-- Entradas:
+--    - IN cedula VARCHAR(50): cedula del local comercial agrícola.
+--    - IN nombre VARCHAR(50): nombre del local comercial agrícola.
+--    - IN telefono VARCHAR(50): telefono del local comercial agrícola.
+--    - IN num_sig_factura: numero de la siguiente factura.
+-- 
+-- ===================================================
 CREATE PROCEDURE registrar_comercio(
     IN cedula VARCHAR(50),
     IN nombre VARCHAR(50),
@@ -361,20 +479,39 @@ CREATE TABLE Planillas (
 
 DELIMITER $$
 
--- GET Planillas
+-- ===================================================
+-- PROCEDURE: get_planillas
+-- Descripción: Obtiene todas las planillas registradas.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_planillas()
 BEGIN
   SELECT * FROM Planillas;
 END $$
 
--- GET Planillas por año
+-- ===================================================
+-- PROCEDURE: get_planillas_por_anio
+-- Descripción: Obtiene todas las planillas registradas
+--              por año.
+-- Entradas:
+--    - IN anio INT: año de las planillas a buscar.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_planillas_por_anio(anio INT)
 BEGIN
   SELECT * FROM Planillas 
   WHERE YEAR(fecha_nomina) = anio;
 END $$
 
--- REGISTRAR Planilla y AGARRAR EL MONTO DE CARGA SOCIAL DE LA TABLA
+-- ===================================================
+-- PROCEDURE: registrar_planilla
+-- Descripción: Registra una planilla.
+-- Entradas:
+--    - IN fecha_nomina DATE: fecha de la planilla.
+-- 
+-- Nota: El valor de la carga social se agarra de la tabla
+--       de una vez.
+-- ===================================================
 CREATE PROCEDURE registrar_planilla(IN fecha_nomina DATE)
 BEGIN
     DECLARE monto_carga_social DOUBLE(10,2);
@@ -383,7 +520,13 @@ BEGIN
       VALUES (fecha_nomina, monto_carga_social);
 END $$
 
--- GET Planilla por fecha
+-- ===================================================
+-- PROCEDURE: get_planilla_por_fecha
+-- Descripción: Obtiene la planilla registrada por fecha.
+-- Entradas:
+--    - IN fecha_nomina DATE: fecha de la planilla a buscar.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_planilla_por_fecha(IN fecha_nomina DATE)
 BEGIN
   SELECT * FROM Planillas WHERE fecha_nomina = fecha_nomina;
@@ -395,6 +538,7 @@ DELIMITER ;
 -- Tabla: PlanillasXEmpleados
 -- Descripcion: Tabla para almacenar a los empleados
 -- que trabajan en la planilla
+-- ===================================================
 CREATE TABLE PlanillasXEmpleados (
   id INT NOT NULL AUTO_INCREMENT,
   id_planilla INT NOT NULL,
@@ -409,8 +553,14 @@ CREATE TABLE PlanillasXEmpleados (
 
 DELIMITER $$
 
--- GET PlanillasXEmpleados
--- Obtiene todos los empleados de una planilla
+-- ===================================================
+-- PROCEDURE: get_planXemp
+-- Descripción: Obtiene todos los empleados que trabajan
+--              en la planilla.
+-- Entradas:
+--    - IN id_planilla INT: id de la planilla.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_planXemp(IN id_planilla INT)
 BEGIN
   DECLARE strQuery VARCHAR(555);
@@ -426,7 +576,14 @@ BEGIN
   EXECUTE stmt;
 END $$
 
--- Obtiene los empleados de una planilla por fecha
+-- ===================================================
+-- PROCEDURE: get_planXemp_por_fecha
+-- Descripción: Obtiene todos los empleados que trabajan
+--              en la planilla por fecha.
+-- Entradas:
+--    - IN fecha_nomina DATE: fecha de la planilla.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_planXemp_por_fecha(IN fecha_nomina DATE)
 BEGIN
   SELECT Emp.cedula, Emp.nombre_completo, Emp.salario_mensual, Rol.nombre
@@ -437,14 +594,28 @@ BEGIN
     WHERE Pla.fecha_nomina = fecha_nomina;
 END $$
 
--- Obtener cantidad de empleados de una planilla
+-- ===================================================
+-- PROCEDURE: get_cant_empleados_planilla
+-- Descripción: Obtiene la cantidad de empleados que
+--              trabajan en la planilla.
+-- Entradas:
+--    - IN id_planilla INT: id de la planilla.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_cant_empleados_planilla(IN id_planilla INT)
 BEGIN
   SELECT COUNT(*) FROM PlanillasXEmpleados 
   WHERE id_planilla = id_planilla;
 END $$
 
--- Obtener cantidad de empleados de una planilla por fecha
+-- ===================================================
+-- PROCEDURE: get_cant_empleados_por_fecha
+-- Descripción: Obtiene la cantidad de empleados que
+--              trabajan en la planilla por fecha.
+-- Entradas:
+--    - IN fecha_nomina DATE: fecha de la planilla.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_cant_empleados_por_fecha(IN fecha_nomina DATE)
 BEGIN
   SELECT COUNT(*) FROM PlanillasXEmpleados 
@@ -452,14 +623,30 @@ BEGIN
   WHERE Pla.fecha_nomina = fecha_nomina;
 END $$
 
--- CREATE PlanillasXEmpleados
+-- ===================================================
+-- PROCEDURE: create_planXemp
+-- Descripción: Crea una relacion entre una planilla y
+--              un empleado.
+-- Entradas:
+--    - IN id_planilla INT: id de la planilla.
+--    - IN cedula_empleado VARCHAR(50): cedula del empleado.
+-- 
+-- ===================================================
 CREATE PROCEDURE create_planXemp(IN id_planilla INT, IN cedula_empleado VARCHAR(50))
 BEGIN
   INSERT INTO PlanillasXEmpleados (id_planilla, cedula_empleado)
     VALUES (id_planilla, cedula_empleado);
 END $$
 
--- REGISTRAR Empleado en planilla por fecha
+-- ===================================================
+-- PROCEDURE: create_planXemp_fecha
+-- Descripción: Crea una relacion entre una planilla y
+--              un empleado por fecha.
+-- Entradas:
+--    - IN fecha_nomina DATE: fecha de la planilla.
+--    - IN cedula_empleado VARCHAR(50): cedula del empleado.
+-- 
+-- ===================================================
 CREATE PROCEDURE create_planXemp_fecha(IN fecha_nomina DATE, IN cedula_empleado VARCHAR(50))
 BEGIN
   DECLARE id_planilla INT;
@@ -468,7 +655,15 @@ BEGIN
     VALUES (id_planilla, cedula_empleado);
 END $$
 
--- REMOVE Empleado de planilla por fecha
+-- ===================================================
+-- PROCEDURE: remove_planXemp_fecha
+-- Descripción: Elimina una relacion entre una planilla y
+--              un empleado por fecha.
+-- Entradas:
+--    - IN fecha_nomina DATE: fecha de la planilla.
+--    - IN cedula_empleado VARCHAR(50): cedula del empleado.
+-- 
+-- ===================================================
 CREATE PROCEDURE remove_planXemp_fecha(IN p_fecha DATE, IN p_cedula VARCHAR(50))
 BEGIN
   DECLARE id_planilla INT;
@@ -477,7 +672,15 @@ BEGIN
   WHERE id_planilla = id_planilla AND cedula_empleado = p_cedula;
 END $$
 
--- REMOVE PlanillasXEmpleados
+-- ===================================================
+-- PROCEDURE: remove_planXemp
+-- Descripción: Elimina una relacion entre una planilla y
+--              un empleado.
+-- Entradas:
+--    - IN id_planilla INT: id de la planilla.
+--    - IN cedula_empleado VARCHAR(50): cedula del empleado.
+-- 
+-- ===================================================
 CREATE PROCEDURE remove_planXemp(IN id_planilla INT, IN cedula_empleado VARCHAR(50))
 BEGIN
   DELETE FROM PlanillasXEmpleados 
@@ -509,7 +712,19 @@ CREATE TABLE Facturas (
 
 DELIMITER $$
 
--- REGISTRAR Factura
+-- ===================================================
+-- PROCEDURE: create_factura
+-- Descripción: Crea una factura.
+-- Entradas:
+--    - IN nombre_cliente VARCHAR(50): nombre del cliente.
+--    - IN fecha_facturacion DATE: fecha de la factura.
+--    - IN id_area INT: id de la area.
+--    - IN cedula_comercio VARCHAR(50): cedula del comercio.
+--    - IN subtotal DOUBLE(15,2): subtotal de la factura.
+--    - IN impuesto DOUBLE(15,2): impuesto de la factura.
+--    - IN total DOUBLE(15,2): total de la factura.
+-- 
+-- ===================================================
 CREATE PROCEDURE create_factura(
     IN nombre_cliente VARCHAR(50), IN fecha_facturacion DATE, 
     IN id_area INT, IN cedula_comercio VARCHAR(50), 
@@ -528,7 +743,13 @@ BEGIN
   SELECT @id_factura;
 END $$
 
--- GET Factura por id
+-- ===================================================
+-- PROCEDURE: get_factura_por_id
+-- Descripción: Obtiene una factura por su id.
+-- Entradas:
+--    - IN id INT: id de la factura.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_factura_por_id(IN id INT)
 BEGIN
   SELECT Com.nombre, Com.cedula, Com.telefono,
@@ -540,7 +761,14 @@ BEGIN
   WHERE Fac.id = id;
 END $$
 
--- GET Facturas por anio
+-- ===================================================
+-- PROCEDURE: get_facturas_por_anio
+-- Descripción: Obtiene las facturas de un comercio
+--              por año.
+-- Entradas:
+--    - IN anio INT: año de las facturas.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_facturas_por_anio(IN anio INT)
 BEGIN
   SELECT Com.nombre, Com.cedula, Com.telefono,
@@ -552,8 +780,13 @@ BEGIN
   WHERE YEAR(Fac.fecha_facturacion) = anio;
 END $$
 
--- GET Facturas
--- Obtiene todas las facturas de un comercio
+-- ===================================================
+-- PROCEDURE: get_facturas
+-- Descripción: Obtiene todas las facturas de un comercio.
+-- Entradas:
+--    - IN p_ced_comercio VARCHAR(50): cedula del comercio.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_facturas(IN p_ced_comercio VARCHAR(50))
 BEGIN
   SELECT Com.nombre, Com.cedula, Com.telefono,
@@ -587,15 +820,27 @@ CREATE TABLE FacturasXDetalleProducto (
 
 DELIMITER $$
 
--- GET cantidad de detalles de una factura
+-- ===================================================
+-- PROCEDURE: get_cantidad_detalles_factura
+-- Descripción: Obtiene la cantidad de detalles de una
+-- factura.
+-- Entradas:
+--    - IN id_factura INT: id de la factura.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_cantidad_detalles_factura(IN id_factura INT)
 BEGIN
   SELECT COUNT(*) FROM FacturasXDetalleProducto
   WHERE id_factura = id_factura;
 END $$
 
--- get FacturasXDetalleProducto
--- Obtiene todos los detalles de productos de una factura
+-- ===================================================
+-- PROCEDURE: get_factXdetprod
+-- Descripción: Obtiene los detalles de una factura.
+-- Entradas:
+--    - IN id_factura INT: id de la factura.
+-- 
+-- ===================================================
 CREATE PROCEDURE get_factXdetprod(IN id_factura INT)
 BEGIN
   SELECT Prod.id, Prod.nombre, Prod.costo,
@@ -605,7 +850,15 @@ BEGIN
   WHERE FacXdet.id_factura = id_factura;
 END $$
 
--- create FacturasXDetalleProducto
+-- ===================================================
+-- PROCEDURE: create_factXdetprod
+-- Descripción: Crea un detalle de una factura.
+-- Entradas:
+--    - IN id_producto VARCHAR(50): id del producto.
+--    - IN id_factura INT: id de la factura.
+--    - IN cantidad INT: cantidad del producto.
+-- 
+-- ===================================================
 CREATE PROCEDURE create_factXdetprod(
   IN id_producto VARCHAR(50), 
   IN id_factura INT, 
