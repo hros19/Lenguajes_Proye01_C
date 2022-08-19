@@ -31,6 +31,7 @@ void Menu_CN();
 void Menu_CV01();
 void Menu_BA01();
 char* Leer(FILE* archivo);
+bool Revisar(char* texto, int cont);
 bool VerificarNumero(char num[]);
 void Pause();
 
@@ -140,11 +141,11 @@ void Menu_OP2() {
     }
     else {
         char* texto = Leer(ubicacionA);
-        exit(-1);
         //continuar con la revision del archivo
     }
 
 }
+
 
 /*****Nombre***************************************
 * Leer
@@ -173,9 +174,36 @@ char* Leer(FILE *archivo) {
     }
     printf("%s",texto);
     fclose(archivo);
+    if (Revisar(texto,cont)) {
+    }
     return texto;
 }
 
+bool Revisar(char* texto, int cont) { //necesario depurar
+    bool bandera = true;
+    char arregloID[cont][BUFFER];
+    int cantID;
+    for (int i = 0;i!=cont;i++) {
+        int pos2;
+        if (bandera) {
+            char palabra[BUFFER];
+            int pos;
+            pos2 = i;
+            while (texto[i]!=',') {
+                palabra[pos] = texto[pos2];
+                pos++;
+                pos2++;
+            }
+            palabra[pos] = '\0';
+            bandera = false;
+            strcpy(arregloID[cantID],palabra);
+            cantID++;
+        }
+        else if(texto[i] == '\n') {
+            bandera = true;
+        }
+    }
+}
 
 /*****Nombre***************************************
 * Menu_OA1
