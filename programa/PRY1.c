@@ -72,7 +72,7 @@ void Menu_01() {
     printf("\n1.Opciones operativas\n2.Opciones administrativas\n>");
     scanf("%s",&opcion_01);
     if (!VerificarNumero(opcion_01)) {
-        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+        printf("[ERROR] <= POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
         Pause();
         Menu_01();
     }
@@ -151,19 +151,22 @@ void Menu_OP2() {
     scanf("%s",&ubicacion);
     FILE* ubicacionA = fopen(ubicacion,"r");
     if (!ubicacionA) {
-        printf("[ERROR] <= EL ARCHIVO NO EXISTE O SE PRODUJO UN ERROR AL INTENTAR ABRIRLO");
+        printf("[ERROR] <= EL ARCHIVO NO EXISTE O SE PRODUJO UN ERROR AL INTENTAR ABRIRLO!!");
         Pause();
         Menu_OP2();
     }
     else {
         int cantCaracteres = ContarCaracteres(ubicacionA);
-        printf("%d",cantCaracteres);
         char* texto = Leer(ubicacionA, cantCaracteres);
         if (Revisar(texto,cantCaracteres)) {
-            printf("todo correcto");
+            //seguimos con la carga
+        }   
+        else {
+            printf("\n[ERROR] <= EL ARCHIVO NO CUENTA CON EL FORMATO NECESARIO PARA LA CARGA DE PRODUCTOS!!\n\n");
+            Pause();
+            Menu_OP2();
         }
-        
-        else {printf("todo mal");}
+
     }
 
 }
@@ -197,7 +200,7 @@ char* Leer(FILE *archivo,int cont) {
                 texto[i] = (char) caracter;
             }
     }
-    printf("%s",texto);
+    //printf("%s",texto);
     fclose(archivo);
     return texto;
 }
@@ -214,11 +217,10 @@ char* Leer(FILE *archivo,int cont) {
 bool Revisar(char* texto, int cont) {
     int cantComas = 0;
     for (int i = 0;i!=cont;i++) {
-        if (texto[i]==',') {cantComas++;}
+        if (texto[i]==',') cantComas++;
         if (texto[i]=='\n' || texto[i] == '\0') {
-            if (cantComas!=3) {return false;}
+            if (cantComas!=3) return false;
             cantComas = 0;
-            printf("%d",cantComas);
         }
     }
     return true;
