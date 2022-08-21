@@ -180,6 +180,15 @@ char* Leer(FILE *archivo) {
     return texto;
 }
 
+/*****Nombre***************************************
+* Revisar
+*****Descripción************************************************
+* Metodo que revisa el formato del archivo de carga de productos
+*****Retorno***********************************************************************************
+* Valor booleano
+*****Entradas**********************************************************************************
+* Cadena de caracteres que contiene el contenido del archivo - numero de caracteres del archivo
+**************************************************/
 bool Revisar(char* texto, int cont) { //necesario depurar
     bool bandera = true;
     char arregloID[cont][BUFFER];
