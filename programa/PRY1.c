@@ -17,8 +17,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-//#include "./dao/comercio_dao.h" //revisar ubicacion
-//#include "./dao/operador_dao.h"
+#include "./dao/comercio_dao.h" //revisar ubicacion
+#include "./dao/operador_dao.h"
 
 #define BUFFER 250
 
@@ -33,6 +33,7 @@ void Menu_CN();
 void Menu_CV01();
 void Menu_BA01();
 char* Leer(FILE* archivo, int cont);
+bool Revisar01_Comas(char* texto, int cont);
 int ContarCaracteres(FILE *archivo);
 int ContarLineas(char* texto);
 bool Revisar(char* texto, int cont);
@@ -117,7 +118,7 @@ void Menu_OP1() {
     scanf("%s",&contraseña);
     
 
-    /*Operador operador;
+    Operador operador;
     strcpy(operador.usuario,nombreUsuario); //posibles problemas de copiado
     strcpy(operador.clave,contraseña);
 
@@ -130,7 +131,7 @@ void Menu_OP1() {
         printf("\n[ERROR] <= NOMBRE DE USUARIO O CONTRASEÑA INCORRECTO, POR FAVOR INTENTE DE NUEVO\n");
         Pause();
         Menu_OP1();
-    }*/
+    }
     Menu_OP2();
     
 }
@@ -216,6 +217,46 @@ char* Leer(FILE *archivo,int cont) {
 * Cadena de caracteres que contiene el contenido del archivo - numero de caracteres del archivo
 **************************************************/
 bool Revisar(char* texto, int cont) {
+    int lineas = ContarLineas(texto);
+    if (Revisar01_Comas(texto,cont)) {
+        char arregloID[lineas][BUFFER];
+        int posID = 0;
+        int pos = 0;
+        char palabra[BUFFER];
+        bool bandera = true;
+        for (int i = 0;i!=cont;i++) {
+            if (bandera) {
+                if (texto[i]!=',') {
+                    palabra[pos] = texto[i];
+                    pos++;
+                }
+                else {
+                    palabra[pos] = '\0';
+                    strcpy(arregloID[posID],palabra);
+                    posID++;
+                    pos = 0;
+                    bandera = false;
+                }
+            }
+            else if(texto[i] == '\n') {
+                bandera = true;
+            }
+        }
+
+        for (int i = 0;i!=lineas;i++) {
+            for (int j = i+1;j!=lineas;j++) {
+                if (strcmp(arregloID[i],arregloID[j])==0) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+    return false;
+}
+
+bool Revisar01_Comas(char* texto, int cont) {
     int cantComas = 0;
     for (int i = 0;i!=cont;i++) {
         if (texto[i]==',') cantComas++;
@@ -224,44 +265,8 @@ bool Revisar(char* texto, int cont) {
             cantComas = 0;
         }
     }
-    int lineas = ContarLineas(texto);
-
-    char arregloID[lineas][BUFFER];
-    int posID = 0;
-    int pos = 0;
-    char palabra[BUFFER];
-    bool bandera = true;
-    for (int i = 0;i!=cont;i++) {
-        if (bandera) {
-            if (texto[i]!=',') {
-                palabra[pos] = texto[i];
-                pos++;
-            }
-            else {
-                palabra[pos] = '\0';
-                strcpy(arregloID[posID],palabra);
-                posID++;
-                pos = 0;
-                bandera = false;
-            }
-        }
-        else if(texto[i] == '\n') {
-            bandera = true;
-        }
-    }
-
-    for (int i = 0;i!=lineas;i++) {
-        for (int j = i+1;j!=lineas;j++) {
-            if (strcmp(arregloID[i],arregloID[j])==0) {
-                return false;
-            }
-        }
-    }
-    
     return true;
 }
-
-
 
 int ContarLineas(char* texto) {
     int i = 0;
@@ -336,14 +341,14 @@ void Menu_OA1() {
 *****Entradas*************************************
 * Sin entradas
 **************************************************/
-void Menu_VI01() {}/*
+void Menu_VI01() {
     char id[] = "001";
     Comercio comercio = ObtenerInfoComercio(id);
     printf("[CEDULA JURIDICA] = %s\n",comercio.cedulaJuridica);
     printf("[NOMBRE DEL LOCAL] = %S\n",comercio.nombre);
     printf("[TELEFONO] = %s\n",comercio.telefono);
     printf("[NUMERO DE SIGUIENTE FACTURA] = %d\n",comercio.numSigFactura);
-}*/
+}
 
 /*****Nombre***************************************
 * Menu_RN01

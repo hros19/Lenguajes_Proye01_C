@@ -1,5 +1,4 @@
-hola,hola,casa,sd
-prueba,f,f,f
-casa,f,f,f
-prueba,f,f,f
-almohada,f,f,f
+hola,casa,si,no
+f,g,h,j
+tt,g,sddd,s
+tta,s,f,f
