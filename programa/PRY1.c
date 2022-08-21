@@ -18,6 +18,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include "./dao/comercio_dao.h" //revisar ubicacion
+#include "./dao/operador_dao.h"
 
 #define BUFFER 250
 
@@ -104,18 +105,30 @@ void Menu_OP1() {
     system("clear");
     fflush(stdin);
     printf("[MENÚ DE OPCIONES OPERATIVAS]\n");
-    //se solicita la contraseña
+    
     printf("Ingrese el nombre de usuario y contraseña\nNombre de usuario:");
     char nombreUsuario[BUFFER];
     scanf("%s",&nombreUsuario);
-    //validamos nombre de nombreUsuario
+
     printf("Contraseña:");
     char contraseña[BUFFER];
     scanf("%s",&contraseña);
-    //validamos contraseña
-    //hacer proceso si da contraseña incorrecta
-    Menu_OP2();
+    
 
+    Operador operador;
+    strcpy(operador.usuario,nombreUsuario); //posibles problemas de copiado
+    strcpy(operador.clave,contraseña);
+
+    if (ValidarOperador(operador)) {
+        printf("INICIO DE SESION CORRECTO");
+        Pause();
+        Menu_OP2();
+    }
+    else {
+        printf("\n[ERROR] <= NOMBRE DE USUARIO O CONTRASEÑA INCORRECTO, POR FAVOR INTENTE DE NUEVO\n");
+        Pause();
+        Menu_OP1();
+    }
     
 }
 
@@ -278,7 +291,7 @@ void Menu_OA1() {
 *****Entradas*************************************
 * Sin entradas
 **************************************************/
-void Menu_VI01() {
+void Menu_VI01() {}
     char id[] = "001";
     Comercio comercio = ObtenerInfoComercio(id);
     printf("[CEDULA JURIDICA] = %s\n",comercio.cedulaJuridica);
