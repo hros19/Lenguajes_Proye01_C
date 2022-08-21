@@ -17,6 +17,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include "./dao/comercio_dao.h" //revisar ubicacion
 
 #define BUFFER 250
 
@@ -268,7 +269,14 @@ void Menu_OA1() {
 *****Entradas*************************************
 * Sin entradas
 **************************************************/
-void Menu_VI01() {}
+void Menu_VI01() {
+    char id[] = "001";
+    Comercio comercio = ObtenerInfoComercio(id);
+    printf("[CEDULA JURIDICA] = %s\n",comercio.cedulaJuridica);
+    printf("[NOMBRE DEL LOCAL] = %S\n",comercio.nombre);
+    printf("[TELEFONO] = %s\n",comercio.telefono);
+    printf("[NUMERO DE SIGUIENTE FACTURA] = %d\n",comercio.numSigFactura);
+}
 
 /*****Nombre***************************************
 * Menu_RN01
