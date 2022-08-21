@@ -34,6 +34,7 @@ void Menu_CV01();
 void Menu_BA01();
 char* Leer(FILE* archivo, int cont);
 int ContarCaracteres(FILE *archivo);
+int ContarLineas(char* texto);
 bool Revisar(char* texto, int cont);
 bool VerificarNumero(char num[]);
 void Pause();
@@ -172,7 +173,7 @@ void Menu_OP2() {
 }
 
 int ContarCaracteres(FILE *archivo) {
-    int cont;
+    int cont = 0;
     do {
         int caracter = fgetc(archivo);
             if (caracter != EOF) {
@@ -223,36 +224,55 @@ bool Revisar(char* texto, int cont) {
             cantComas = 0;
         }
     }
-    return true;
-}
+    int lineas = ContarLineas(texto);
 
-
-
-
-   /* bool bandera = true;
-    char arregloID[cont][BUFFER];
-    int cantID;
+    char arregloID[lineas][BUFFER];
+    int posID = 0;
+    int pos = 0;
+    char palabra[BUFFER];
+    bool bandera = true;
     for (int i = 0;i!=cont;i++) {
-        int pos2;
         if (bandera) {
-            char palabra[BUFFER];
-            int pos;
-            pos2 = i;
-            while (texto[pos2]!=',') {
-                palabra[pos] = texto[pos2];
+            if (texto[i]!=',') {
+                palabra[pos] = texto[i];
                 pos++;
-                pos2++;
             }
-            palabra[pos] = '\0';
-            bandera = false;
-            strcpy(arregloID[cantID],palabra);
-            cantID++;
+            else {
+                palabra[pos] = '\0';
+                strcpy(arregloID[posID],palabra);
+                posID++;
+                pos = 0;
+                bandera = false;
+            }
         }
         else if(texto[i] == '\n') {
             bandera = true;
         }
     }
-}*/
+
+    //arreglo listo con la lista de ID, empezar a revisar repetidos
+
+
+
+
+
+
+
+    
+    return true;
+}
+
+
+
+int ContarLineas(char* texto) {
+    int i = 0;
+    int cantLineas = 0;
+    while (texto[i]!='\0') {
+        if (texto[i]=='\n') cantLineas++;
+        i++;
+    }
+    return cantLineas;
+}
 
 /*****Nombre***************************************
 * Menu_OA1

@@ -1,5 +1,5 @@
-hola,hola,casa
-prueba
-prueba
-prueba
-prueba
+hola,hola,casa,sd
+prueba,f,f,f
+casa,f,f,f
+prueba,f,f,f
+almohada,f,f,f
