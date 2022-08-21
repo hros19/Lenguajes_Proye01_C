@@ -17,8 +17,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-#include "./dao/comercio_dao.h" //revisar ubicacion
-#include "./dao/operador_dao.h"
+//#include "./dao/comercio_dao.h" //revisar ubicacion
+//#include "./dao/operador_dao.h"
 
 #define BUFFER 250
 
@@ -32,7 +32,8 @@ void Menu_RV01();
 void Menu_CN();
 void Menu_CV01();
 void Menu_BA01();
-char* Leer(FILE* archivo);
+char* Leer(FILE* archivo, int cont);
+int ContarCaracteres(FILE *archivo);
 bool Revisar(char* texto, int cont);
 bool VerificarNumero(char num[]);
 void Pause();
@@ -115,7 +116,7 @@ void Menu_OP1() {
     scanf("%s",&contraseña);
     
 
-    Operador operador;
+    /*Operador operador;
     strcpy(operador.usuario,nombreUsuario); //posibles problemas de copiado
     strcpy(operador.clave,contraseña);
 
@@ -128,7 +129,8 @@ void Menu_OP1() {
         printf("\n[ERROR] <= NOMBRE DE USUARIO O CONTRASEÑA INCORRECTO, POR FAVOR INTENTE DE NUEVO\n");
         Pause();
         Menu_OP1();
-    }
+    }*/
+    Menu_OP2();
     
 }
 
@@ -154,12 +156,28 @@ void Menu_OP2() {
         Menu_OP2();
     }
     else {
-        char* texto = Leer(ubicacionA);
-        //continuar con la revision del archivo
+        int cantCaracteres = ContarCaracteres(ubicacionA);
+        printf("%d",cantCaracteres);
+        char* texto = Leer(ubicacionA, cantCaracteres);
+        if (Revisar(texto,cantCaracteres)) {
+            printf("todo correcto");
+        }
+        
+        else {printf("todo mal");}
     }
 
 }
 
+int ContarCaracteres(FILE *archivo) {
+    int cont;
+    do {
+        int caracter = fgetc(archivo);
+            if (caracter != EOF) {
+                cont++;
+            }
+    }while (!feof(archivo));
+    return cont;
+}
 
 /*****Nombre***************************************
 * Leer
@@ -170,14 +188,7 @@ void Menu_OP2() {
 *****Entradas***********************************************
 * El descriptor del archivo
 **************************************************/
-char* Leer(FILE *archivo) {
-    int cont;
-    do {
-        int caracter = fgetc(archivo);
-            if (caracter != EOF) {
-                cont++;
-            }
-    }while (!feof(archivo));
+char* Leer(FILE *archivo,int cont) {
     char *texto = malloc (sizeof(char) * cont);
     rewind(archivo);
     for (int i = 0; i!=cont;i++) {
@@ -188,8 +199,6 @@ char* Leer(FILE *archivo) {
     }
     printf("%s",texto);
     fclose(archivo);
-    if (Revisar(texto,cont)) {
-    }
     return texto;
 }
 
@@ -202,8 +211,23 @@ char* Leer(FILE *archivo) {
 *****Entradas**********************************************************************************
 * Cadena de caracteres que contiene el contenido del archivo - numero de caracteres del archivo
 **************************************************/
-bool Revisar(char* texto, int cont) { //necesario depurar
-    bool bandera = true;
+bool Revisar(char* texto, int cont) {
+    int cantComas = 0;
+    for (int i = 0;i!=cont;i++) {
+        if (texto[i]==',') {cantComas++;}
+        if (texto[i]=='\n' || texto[i] == '\0') {
+            if (cantComas!=3) {return false;}
+            cantComas = 0;
+            printf("%d",cantComas);
+        }
+    }
+    return true;
+}
+
+
+
+
+   /* bool bandera = true;
     char arregloID[cont][BUFFER];
     int cantID;
     for (int i = 0;i!=cont;i++) {
@@ -212,7 +236,7 @@ bool Revisar(char* texto, int cont) { //necesario depurar
             char palabra[BUFFER];
             int pos;
             pos2 = i;
-            while (texto[i]!=',') {
+            while (texto[pos2]!=',') {
                 palabra[pos] = texto[pos2];
                 pos++;
                 pos2++;
@@ -226,7 +250,7 @@ bool Revisar(char* texto, int cont) { //necesario depurar
             bandera = true;
         }
     }
-}
+}*/
 
 /*****Nombre***************************************
 * Menu_OA1
@@ -291,14 +315,14 @@ void Menu_OA1() {
 *****Entradas*************************************
 * Sin entradas
 **************************************************/
-void Menu_VI01() {}
+void Menu_VI01() {}/*
     char id[] = "001";
     Comercio comercio = ObtenerInfoComercio(id);
     printf("[CEDULA JURIDICA] = %s\n",comercio.cedulaJuridica);
     printf("[NOMBRE DEL LOCAL] = %S\n",comercio.nombre);
     printf("[TELEFONO] = %s\n",comercio.telefono);
     printf("[NUMERO DE SIGUIENTE FACTURA] = %d\n",comercio.numSigFactura);
-}
+}*/
 
 /*****Nombre***************************************
 * Menu_RN01
