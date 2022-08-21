@@ -250,14 +250,13 @@ bool Revisar(char* texto, int cont) {
         }
     }
 
-    //arreglo listo con la lista de ID, empezar a revisar repetidos
-
-
-
-
-
-
-
+    for (int i = 0;i!=lineas;i++) {
+        for (int j = i+1;j!=lineas;j++) {
+            if (strcmp(arregloID[i],arregloID[j])==0) {
+                return false;
+            }
+        }
+    }
     
     return true;
 }
