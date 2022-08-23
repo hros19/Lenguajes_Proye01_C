@@ -57,7 +57,8 @@ bool RegistrarOperador(Operador operador) {
     );
 
     if (mysql_query(conn, query)) {
-        fprintf(stderr, "\n[Error] %s\n", mysql_error(conn));
+        // Está bien que no se imprima el error porque es una operación
+        // para validar el usuario y la clave.
         mysql_close(conn);
         return false;
     }
