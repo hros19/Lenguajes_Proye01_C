@@ -101,7 +101,7 @@ EmpleadoConRol* ObtenerEmpleadosConRol() {
     sprintf(query, "CALL get_empleados_con_rol()");
     
     if (mysql_query(conn, query)) {
-        printf("Error al ejecutar el query: %s\n", mysql_error(conn));
+        mysql_close(conn);
         return NULL;
     }
     
