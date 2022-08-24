@@ -490,6 +490,20 @@ BEGIN
 END $$
 
 -- ===================================================
+-- PROCEDURE: get_planillas_con_cant_empleados
+-- Descripción: Obtiene la información de las planillas
+--              con la cantidad de empleados que la contiene.
+-- ===================================================
+CREATE PROCEDURE get_planillas_con_cant_empleados()
+BEGIN
+  SELECT P.id, P.fecha_nomina, P.carga_social, COUNT(PE.id) AS cant_empleados
+  FROM Planillas P
+  INNER JOIN PlanillasXEmpleados PE ON P.id = PE.id_planilla
+  WHERE P.id = PE.id_planilla
+  GROUP BY P.id;
+END $$
+
+-- ===================================================
 -- PROCEDURE: get_planillas_por_anio
 -- Descripción: Obtiene todas las planillas registradas
 --              por año.
@@ -527,10 +541,25 @@ END $$
 --    - IN fecha_nomina DATE: fecha de la planilla a buscar.
 -- 
 -- ===================================================
-CREATE PROCEDURE get_planilla_por_fecha(IN fecha_nomina DATE)
+CREATE PROCEDURE get_planilla_por_fecha(IN mes_nomina INT, IN anio_nomina INT)
 BEGIN
-  SELECT * FROM Planillas WHERE fecha_nomina = fecha_nomina;
+    SELECT * FROM Planillas 
+    WHERE MONTH(fecha_nomina) = mes_nomina AND YEAR(fecha_nomina) = anio_nomina;
 END $$
+
+-- ===================================================
+-- PROCEDURE: eliminar_planilla_por_fecha
+-- Descripción: Elimina una planilla registrada por fecha.
+-- Entradas:
+--    - IN fecha_nomina DATE: fecha de la planilla a eliminar.
+--
+-- ===================================================
+CREATE PROCEDURE eliminar_planilla_por_fecha(IN mes_nomina INT, IN anio_nomina INT)
+BEGIN
+    DELETE FROM Planillas 
+    WHERE MONTH(fecha_nomina) = mes_nomina AND YEAR(fecha_nomina) = anio_nomina;
+END $$
+
 
 DELIMITER ;
 
@@ -545,7 +574,7 @@ CREATE TABLE PlanillasXEmpleados (
   cedula_empleado VARCHAR(50) NOT NULL,
   CONSTRAINT pk_planXemp PRIMARY KEY (id),
   CONSTRAINT fk_planXemp_plan FOREIGN KEY (id_planilla)
-    REFERENCES Planillas(id) ON DELETE RESTRICT,
+    REFERENCES Planillas(id) ON DELETE CASCADE,
   CONSTRAINT fk_planXemp_emp FOREIGN KEY (cedula_empleado)
     REFERENCES Empleados(cedula) ON DELETE RESTRICT,
   CONSTRAINT uq_planXemp UNIQUE (id_planilla, cedula_empleado)
@@ -647,10 +676,10 @@ END $$
 --    - IN cedula_empleado VARCHAR(50): cedula del empleado.
 -- 
 -- ===================================================
-CREATE PROCEDURE create_planXemp_fecha(IN fecha_nomina DATE, IN cedula_empleado VARCHAR(50))
+CREATE PROCEDURE create_planXemp_fecha(IN pFecha_nomina DATE, IN cedula_empleado VARCHAR(50))
 BEGIN
   DECLARE id_planilla INT;
-  SELECT id INTO id_planilla FROM Planillas WHERE fecha_nomina = fecha_nomina;
+  SELECT id INTO id_planilla FROM Planillas WHERE fecha_nomina = pFecha_nomina;
   INSERT INTO PlanillasXEmpleados (id_planilla, cedula_empleado)
     VALUES (id_planilla, cedula_empleado);
 END $$
