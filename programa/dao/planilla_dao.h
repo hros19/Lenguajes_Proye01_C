@@ -42,6 +42,16 @@ struct planilla {
 
 typedef struct planilla Planilla;
 
+struct planillaCantEmpleados {
+    int id; // Id de la planilla en la tabla.
+    Fecha fecha; // Fecha correspondiente a la planilla.
+    double monto_carga_social; // El monto de la carga social para la planilla.
+    int cantidad_empleados; // La cantidad de empleados de la planilla.
+    EmpleadoConRol* empleadosConRol; // Lista de empleados de la planilla.
+};
+
+typedef struct planillaCantEmpleados PlanillaConCantEmpleados;
+
 static MYSQL_RES *res;
 static MYSQL_ROW row;
 
@@ -72,13 +82,42 @@ bool RegistrarPlanilla(Planilla planilla) {
     );
     
     if (mysql_query(conn, query)) {
-        printf("Error al ejecutar el query: %s\n", mysql_error(conn));
         mysql_free_result(res);
         mysql_close(conn);
         return false;
     }
     
     mysql_free_result(res);
+    mysql_close(conn);
+
+    return true;
+}
+
+/*****Nombre************************************************************
+* EliminarPlanillaPorFecha
+*****Descripción********************************************************
+* Elimina una planilla de la base de datos.
+*****Retorno************************************************************
+* Un valor booleano (bool) que indica el éxito (true) o fracaso (false)
+* del eliminado.
+*****Entradas***********************************************************
+* - (Fecha fecha) La fecha de la planilla que se desea eliminar.
+************************************************************************/
+bool EliminarPlanillaPorFecha(Fecha fecha) {
+    MYSQL *conn = Conectar();
+    char query[256];
+
+    sprintf(
+        query, "CALL eliminar_planilla_por_fecha('%i', '%i')",
+        fecha.mes, fecha.anio
+    );
+    
+    if (mysql_query(conn, query)) {
+        printf("%s\n", mysql_error(conn));
+        mysql_close(conn);
+        
+        return false;
+    }
     mysql_close(conn);
 
     return true;
@@ -176,17 +215,10 @@ bool EliminarEmpleadoDePlanilla(Fecha fecha, char *cedula_empleado) {
 Planilla ObtenerPlanillaPorFecha(Fecha fecha) {
     MYSQL *conn = Conectar();
     char query[256];
-    char fecha_str[25];
-    sprintf(
-        fecha_str, "%d-%d-%d", 
-        fecha.anio, 
-        fecha.mes, 
-        fecha.dia
-    );
 
     sprintf(
-        query, "CALL get_planilla_por_fecha('%s')",
-        fecha_str
+        query, "CALL get_planilla_por_fecha('%i', '%i')",
+        fecha.mes, fecha.anio
     );
 
     Planilla planilla;
@@ -217,6 +249,54 @@ Planilla ObtenerPlanillaPorFecha(Fecha fecha) {
     mysql_close(conn);
 
     return planilla;
+}
+
+PlanillaConCantEmpleados* ObtenerPlanillasConCantEmpleados() {
+    MYSQL *conn = Conectar();
+    char query[256];
+    sprintf(
+        query,
+        "CALL get_planillas_con_cant_empleados()"
+    );
+
+    if (mysql_query(conn, query)) {
+        mysql_close(conn);
+        return NULL;
+    }
+
+
+    res = mysql_store_result(conn);
+    if (res) {
+        int cant_planillas = mysql_num_rows(res) + 1;
+        if (mysql_num_rows(res) == 0) {
+            mysql_free_result(res);
+            mysql_close(conn);
+            return NULL;
+        }
+        PlanillaConCantEmpleados *planillas = malloc(
+            cant_planillas * sizeof *planillas
+        );
+        int i = 0;
+        while ((row = mysql_fetch_row(res)) && i < cant_planillas) {
+            planillas[i].id = atoi(row[0]);
+            char *fecha_plan_bd = row[1];
+            sscanf(
+                fecha_plan_bd, "%d-%d-%d", 
+                &planillas[i].fecha.anio, 
+                &planillas[i].fecha.mes, 
+                &planillas[i].fecha.dia
+            );
+            planillas[i].monto_carga_social = atof(row[2]);
+            planillas[i].cantidad_empleados = atoi(row[3]);
+            i++;
+        }
+        planillas[i].id = -1;
+        mysql_free_result(res);
+        mysql_close(conn);
+        return planillas;
+    }
+    mysql_close(conn);
+    return NULL;
 }
 
 /*****Nombre************************************************************
@@ -255,6 +335,23 @@ int ObtenerCantEmpleadosPorPlanilla(int idPlanilla) {
     mysql_close(conn);
 
     return cant_empleados;
+}
+
+bool EliminarPlanilla(int mes, int anio) {
+    MYSQL *conn = Conectar();
+    char query[256];
+    sprintf(
+        query, "CALL eliminar_planilla_por_fecha(%d, %d)",
+        mes, anio
+    );
+
+    if (mysql_query(conn, query)) {
+        mysql_close(conn);
+        return false;
+    }
+    
+    mysql_close(conn);
+    return true;
 }
 
 /*****Nombre************************************************************
