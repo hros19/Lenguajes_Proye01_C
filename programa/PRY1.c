@@ -1399,6 +1399,16 @@ void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegid
     }
 }
 
+
+bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto) {
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /*****Nombre***************************************
 * AgregarEmpleadosANominaAux
 *****Descripción**********************************
