@@ -1478,6 +1478,14 @@ Area ObtenerAreaProduccion(int id_area) {
     }
     return area;
 }
+bool ExisteAreaProduccion(int id_area_produccion) {
+    for (int i = 0;i < cantidadAreas;i++) {
+        if (listaAreas[i].id == id_area_produccion) {
+            return true;
+        }
+    }
+    return false;
+}
 
 
 /*****Nombre***************************************
