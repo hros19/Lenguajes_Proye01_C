@@ -1409,6 +1409,15 @@ bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, 
     return false;
 }
 
+void AgregarRepetidoLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cant_prod_int) {
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
+            lineasFactura[i].cantidad += cant_prod_int;
+            return;
+        }
+    }
+}
+
 /*****Nombre***************************************
 * AgregarEmpleadosANominaAux
 *****Descripción**********************************
