@@ -1511,50 +1511,18 @@ void ImprimirListaDeEmpleados(EmpleadoConRol* empleados_elegidos, int cantidad_e
     }
 }
 
-/*****Nombre***************************************
-* Menu_RV01
-*****Descripción**********************************
-* Menu de gestion de registro de ventas
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_RV01() {}
-
-/*****Nombre***************************************
-* Menu_CN
-*****Descripción**********************************
-* Menu de consulta de nominas
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_CN() {}
-
-/*****Nombre***************************************
-* Menu_CV01
-*****Descripción**********************************
-* Menu de consulta de ventas
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_CV01() {}
-
-/*****Nombre***************************************
-* Menu_VA01
-*****Descripción**********************************
-* Menu de gestion de balance anual
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_BA01() {}
-
+LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad) {
+    LineaFactura* lineasNuevas = malloc((cant_prod_elegidos+1) * sizeof(LineaFactura));
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        lineasNuevas[i] = lineasFactura[i];
+    }
+    LineaFactura lf;
+    strcpy(lf.id_producto, producto.id);
+    lf.cantidad = cantidad;
+    lineasNuevas[cant_prod_elegidos] = lf;
+    free(lineasFactura);
+    return lineasNuevas;
+}
 
 
 /*****Nombre***************************************
