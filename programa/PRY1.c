@@ -1950,6 +1950,15 @@ void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos
     PauseSinTimer(2);
 }
 
+
+void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_elegidos, int id_factura) {
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        char id_producto[51];
+        strcpy(id_producto, lineasFactura[i].id_producto);
+        Producto prod = ObtenerProducto((char*)id_producto);
+        RegistrarDetalleFactura(id_factura, prod, lineasFactura[i].cantidad);
+    }
+}
 /*****Nombre***************************************
 * VerificarNumero
 *****Descripción**********************************
