@@ -34,6 +34,8 @@
 bool RegistrarOperadorInicial();
 bool CargarComercioDesdeBdd();
 void CargarProductosDesdeBdd();
+bool CargarFacturasDesdeBdd();
+bool StringSoloConLetras(char* cadena);
 bool CargarAreasDesdeBdd();
 bool CargarEmpleadosDesdeBdd();
 bool CargarProductosDesdeRuta();
@@ -55,6 +57,9 @@ void MostrarTodasLasNominasConSalarios();
 void MostrarInformacionDelNegocio();
 void MostrarTodasLasNominas();
 void MenuRegistroVentaProducto();
+void ConsultarFacturasCargadas();
+Area ObtenerAreaProduccion(int id_area);
+bool ExisteAreaProduccion(int id_area_produccion);
 
 void Menu_01();
 void Menu_OP1();
@@ -78,6 +83,8 @@ bool ExisteNomina(int id_nomina);
 bool EliminarNomina(int id_nomina);
 void PauseSinTimer(int cantidadEnters);
 void Pause();
+
+LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad);
 
 static Operador operador; // Operador del sistema
 static Comercio comercio; // Comercio del sistema
@@ -952,6 +959,201 @@ void MostrarTodasLasNominas() {
         );
         i++;
     }
+}
+
+
+void MenuRegistroVentaProducto(LineaFactura* lineasFactura, int cant_prod_elegidos) {
+    system("clear");
+    printf("[REGISTRO DE VENTA DE PRODUCTOS]\n");
+    printf("Cantidad de productos elegidos: %d\n",cant_prod_elegidos);
+    printf("\n>>> Productos disponibles <<<\n");
+    MostrarListaDeProductos();
+    if (cant_prod_elegidos > 0) {
+        printf("\n----------------------------------------\n");
+        printf(">>> Detalles de facturacion");
+        printf("\n----------------------------------------\n");
+        double subtotal = 0;
+        double iva = 0;
+        double total = 0;
+        for (int i = 0;i < cant_prod_elegidos;i++) {
+            char xd[51];
+            strcpy(xd, lineasFactura[i].id_producto);
+            Producto p = ObtenerProductoExistente((char*)xd);
+            double subtotal_linea = (p.costo * lineasFactura[i].cantidad);
+            double iva_linea = (p.costo * lineasFactura[i].cantidad) * (p.impuesto / 100);
+            double total_linea = subtotal_linea + iva_linea;
+            printf(
+                "[%s / %15s] Cantidad: %5d\t | Subtotal: %10.2f\t | IVA(%.2f%): %10.2f\t | Total: %12.2f\n",
+                p.id,
+                p.nombre,
+                lineasFactura[i].cantidad,
+                subtotal_linea,
+                p.impuesto,
+                iva_linea,
+                total_linea
+            );
+            subtotal += subtotal_linea;
+            iva += iva_linea;
+            total += total_linea;
+        }
+        printf("\n----------------------------------------\n");
+        printf(">>> Totales (montos finales)\n");
+        printf("Subtotal = %.2f | IVA = %.2f | Total = %.2f", subtotal, iva, total);
+    }
+    printf("\n-------------------------------------\n");
+    printf("1.Agregar producto\n2.Eliminar producto\n3.Finalizar venta\n0.Cancelar\n>");
+    char opcion_01[BUFFER];
+    scanf("%s",&opcion_01);
+    if (!VerificarNumero(opcion_01)) {
+        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+        PauseSinTimer(2);
+        MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+    int opcion_02 = strtol(opcion_01,NULL,10);
+
+    char id_prod[BUFFER];
+    char confirmacion[BUFFER];
+    switch(opcion_02) {
+        case 1:
+            printf("[!] Digite el [id] del producto a agregar: ");
+            scanf("%s",&id_prod);
+            if (strlen(id_prod) == 0) {
+                printf("[ERROR] = POR FAVOR DIGITE UN ID VALIDO\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            if (!ExisteProducto(id_prod)) {
+                printf("[ERROR] = EL PRODUCTO NO EXISTE\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            printf("Id >>>> %s\n",id_prod);
+            Producto prod = ObtenerProducto((char*)id_prod);
+            if (strcmp(prod.id,"ND") == 0) {
+                printf("[ERROR] = EL PRODUCTO NO EXISTE\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            printf("\n");
+            printf("[!] Digite la cantidad de [%s] a agregar: ", prod.nombre);
+            char cant_prod[BUFFER];
+            scanf("%s",&cant_prod);
+            if (strlen(cant_prod) == 0) {
+                printf("[ERROR] = POR FAVOR DIGITE UNA CANTIDAD VALIDA\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            if (!VerificarNumero(cant_prod)) {
+                printf("[ERROR] = POR FAVOR DIGITE UNA CANTIDAD VALIDA\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }  
+            int cant_prod_int = strtol(cant_prod,NULL,10);
+            if (cant_prod_int <= 0) {
+                printf("[ERROR] = POR FAVOR DIGITE UNA CANTIDAD VALIDA\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            if (ExisteProductoEnLinea(lineasFactura, cant_prod_elegidos, prod)) {
+                // Agregar repetido
+                AgregarRepetidoLineaFactura(lineasFactura, cant_prod_elegidos, prod, cant_prod_int);
+                printf("[!] SE AGREGARON (%i) MAS DE [%s] CON EXITO!\n", cant_prod_int, prod.nombre);
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            // Agregar nuevo producto
+            printf("[!] SE AGREGARON LAS  (%i) DE [%s] CON EXITO!\n", cant_prod_int, prod.nombre);
+            lineasFactura = AgregarLineaFactura(lineasFactura, cant_prod_elegidos, prod, cant_prod_int);
+            cant_prod_elegidos++;
+
+            break;
+        case 2: // Eliminar producto
+            if (cant_prod_elegidos == 0) {
+                printf("[ERROR] = NO HAY PRODUCTOS ELEGIDOS\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            printf("[!] Digite el [id] del producto a eliminar: ");
+            scanf("%s",&id_prod);
+            if (strlen(id_prod) == 0) {
+                printf("[ERROR] = POR FAVOR DIGITE UN ID VALIDO\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            if (!ExisteProducto(id_prod)) {
+                printf("[ERROR] = EL PRODUCTO NO EXISTE\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            Producto pro = ObtenerProducto((char*)id_prod);
+            if (!ExisteProductoEnLinea(lineasFactura, cant_prod_elegidos, pro)) {
+                printf("[ERROR] = EL PRODUCTO NO EXISTE EN LA LISTA DE ELEGIDOS\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            lineasFactura = EliminarLineaFactura(lineasFactura, cant_prod_elegidos, pro);
+            cant_prod_elegidos--;
+            printf("[!] SE ELIMINARON LAS [%s] CON EXITO!\n",pro.nombre);
+            PauseSinTimer(2);
+            MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+            return;
+        case 3: // Cerrar venta
+            if (cant_prod_elegidos == 0) {
+                printf("[ERROR] = NO HAY PRODUCTOS ELEGIDOS\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            printf("[¿!?] ¿Esta seguro de cerrar la venta? (s/n): ");
+            scanf("%s",&confirmacion);
+            if (strlen(confirmacion) == 0) {
+                printf("[ERROR] = POR FAVOR DIGITE UNA CONFIRMACION VALIDA\n");
+                PauseSinTimer(2);
+                MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            if (strcmp(confirmacion,"s") == 0 || strcmp(confirmacion,"S") == 0) {
+                // Cerrar las ventas
+                TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+                return;
+            }
+            break;
+        case 0: // Cancelar
+            if (cant_prod_elegidos == 0) {
+                printf("[ERROR] SE CANCELO LA VENTA, VOLVIENDO AL MENU ANTERIOR\n");
+                PauseSinTimer(2);
+                Menu_OA1();
+                return;
+            }
+            printf("[¿!!!?] SEGURO QUE DESEA CANCELAR LA VENTA? (s/n): ");
+            scanf("%s",&confirmacion);
+            if (strcmp(confirmacion,"s") == 0 || strcmp(confirmacion,"S") == 0) {
+                printf("[!!!] SE CANCELO LA VENTA, VOLVIENDO AL MENU ANTERIOR\n");
+                PauseSinTimer(2);
+                Menu_OA1();
+                return;
+            }
+            printf("[!] SE CONTINUA CON LA VENTA\n");
+            break;
+        default:
+            printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+            break;
+    }
+    PauseSinTimer(2);
+    MenuRegistroVentaProducto(lineasFactura, cant_prod_elegidos);
+    return;
 }
 
 /*****Nombre***************************************
