@@ -242,9 +242,9 @@ END $$
 --    - IN id VARCHAR(50): Id del producto.
 -- 
 -- ===================================================
-CREATE PROCEDURE get_producto(IN id VARCHAR(50))
+CREATE PROCEDURE get_producto(IN pId VARCHAR(50))
 BEGIN
-  SELECT * FROM Productos WHERE id = id;
+  SELECT * FROM Productos WHERE id = pId;
 END $$
 
 -- ===================================================
@@ -515,6 +515,21 @@ CREATE PROCEDURE get_planillas_por_anio(anio INT)
 BEGIN
   SELECT * FROM Planillas 
   WHERE YEAR(fecha_nomina) = anio;
+END $$
+
+-- ===================================================
+-- PROCEDURE: get_planillas_por_anio_con_cant_empleados
+-- Descripción: Obtiene la información de las planillas
+--              por año con la cantidad de empleados
+--
+-- ===================================================
+CREATE PROCEDURE get_planillas_por_anio_con_cant_empleados(anio INT)
+BEGIN
+  SELECT P.id, P.fecha_nomina, P.carga_social, COUNT(PE.id) AS cant_empleados
+  FROM Planillas P
+  INNER JOIN PlanillasXEmpleados PE ON P.id = PE.id_planilla
+  WHERE YEAR(P.fecha_nomina) = anio
+  GROUP BY P.id;
 END $$
 
 -- ===================================================
@@ -827,6 +842,19 @@ BEGIN
     WHERE Fac.cedula_comercio = p_ced_comercio;    
 END$$
 
+-- ===================================================
+-- get_cantidad_facturas
+-- Descripción: Obtiene la cantidad de facturas de un comercio.
+-- Entradas:
+--    - IN p_ced_comercio VARCHAR(50): cedula del comercio.
+--
+-- ===================================================
+CREATE PROCEDURE get_cantidad_facturas(IN p_ced_comercio VARCHAR(50))
+BEGIN
+  SELECT COUNT(*) FROM Facturas
+  WHERE cedula_comercio = p_ced_comercio;
+END$$
+
 DELIMITER ;
 
 -- ===================================================
@@ -857,10 +885,10 @@ DELIMITER $$
 --    - IN id_factura INT: id de la factura.
 -- 
 -- ===================================================
-CREATE PROCEDURE get_cantidad_detalles_factura(IN id_factura INT)
+CREATE PROCEDURE get_cantidad_detalles_factura(IN pIdFactura INT)
 BEGIN
   SELECT COUNT(*) FROM FacturasXDetalleProducto
-  WHERE id_factura = id_factura;
+  WHERE id_factura = pIdFactura;
 END $$
 
 -- ===================================================

@@ -81,12 +81,10 @@ Producto ObtenerProducto(char *idProducto) {
     
     char query[100];
     sprintf(query, "CALL get_producto('%s')", idProducto);
-
     if (mysql_query(conn, query)) {
         printf("[Error] %s\n", mysql_error(conn));
         return producto;
     }
-
     res = mysql_store_result(conn);
     while ((row = mysql_fetch_row(res))) {
         strcpy(producto.id, row[0]);
