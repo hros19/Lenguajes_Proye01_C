@@ -299,6 +299,55 @@ PlanillaConCantEmpleados* ObtenerPlanillasConCantEmpleados() {
     return NULL;
 }
 
+PlanillaConCantEmpleados* ObtenerPlanillasPorAnio(int p_anio) {
+    MYSQL *conn = Conectar();
+    char query[256];
+    sprintf(
+        query,
+        "CALL get_planillas_por_anio_con_cant_empleados(%i)",
+        p_anio
+    );
+
+    if (mysql_query(conn, query)) {
+        mysql_close(conn);
+        return NULL;
+    }
+
+
+    res = mysql_store_result(conn);
+    if (res) {
+        int cant_planillas = mysql_num_rows(res) + 1;
+        if (mysql_num_rows(res) == 0) {
+            mysql_free_result(res);
+            mysql_close(conn);
+            return NULL;
+        }
+        PlanillaConCantEmpleados *planillas = malloc(
+            cant_planillas * sizeof *planillas
+        );
+        int i = 0;
+        while ((row = mysql_fetch_row(res)) && i < cant_planillas) {
+            planillas[i].id = atoi(row[0]);
+            char *fecha_plan_bd = row[1];
+            sscanf(
+                fecha_plan_bd, "%d-%d-%d", 
+                &planillas[i].fecha.anio, 
+                &planillas[i].fecha.mes, 
+                &planillas[i].fecha.dia
+            );
+            planillas[i].monto_carga_social = atof(row[2]);
+            planillas[i].cantidad_empleados = atoi(row[3]);
+            i++;
+        }
+        planillas[i].id = -1;
+        mysql_free_result(res);
+        mysql_close(conn);
+        return planillas;
+    }
+    mysql_close(conn);
+    return NULL;
+}
+
 /*****Nombre************************************************************
 * ObtenerCantEmpleadosPorPlanilla
 *****Descripción********************************************************
