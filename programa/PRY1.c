@@ -1674,6 +1674,24 @@ bool CedulaFueElegida(char* cedula, EmpleadoConRol* empleados_elegidos, int cant
     return false;
 }
 
+LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto prod) {
+    LineaFactura* lineasNuevas = malloc((cant_prod_elegidos-1) * sizeof(LineaFactura));
+    int i = 0;
+    int j = 0;
+    while (i < cant_prod_elegidos) {
+        if (strcmp(lineasFactura[i].id_producto, prod.id) != 0) {
+            LineaFactura lf;
+            strcpy(lf.id_producto, lineasFactura[i].id_producto);
+            lf.cantidad = lineasFactura[i].cantidad;
+            lineasNuevas[j] = lf;
+            j++;
+        }
+        i++;
+    }
+    free(lineasFactura);
+    return lineasNuevas;
+}
+
 /*****Nombre***************************************
 * VerificarCedulaEmpleado
 *****Descripción**********************************
