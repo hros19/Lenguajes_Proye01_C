@@ -1785,6 +1785,171 @@ LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_ele
 }
 
 
+void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos) {
+    system("clear");
+    printf("\n----------------------------------------\n");
+    printf(">>> Detalles de facturacion");
+    printf("\n----------------------------------------\n");
+    double subtotal = 0;
+    double iva = 0;
+    double total = 0;
+    for (int i = 0;i < cant_prod_elegidos;i++) {
+        char xd[51];
+        strcpy(xd, lineasFactura[i].id_producto);
+        Producto p = ObtenerProductoExistente((char*)xd);
+        double subtotal_linea = (p.costo * lineasFactura[i].cantidad);
+        double iva_linea = (p.costo * lineasFactura[i].cantidad) * (p.impuesto / 100);
+        double total_linea = subtotal_linea + iva_linea;
+        printf(
+            "[%s / %15s] Cantidad: %5d\t | Subtotal: %10.2f\t | IVA(%.2f%): %10.2f\t | Total: %12.2f\n",
+            p.id,
+            p.nombre,
+            lineasFactura[i].cantidad,
+            subtotal_linea,
+            p.impuesto,
+            iva_linea,
+            total_linea
+        );
+        subtotal += subtotal_linea;
+        iva += iva_linea;
+        total += total_linea;
+    }
+    printf("\n----------------------------------------\n");
+    printf(">>> Totales (montos finales)\n");
+    printf("Subtotal = %.2f | IVA = %.2f | Total = %.2f", subtotal, iva, total);
+    printf("\n----------------------------------------\n");
+    char nombre_cliente[51];
+    printf("\n[!] Digite el nombre con espacios del cliente: ");
+
+    fflush(stdin);
+    scanf(" %[^\n]s",&nombre_cliente);
+    printf("\n");
+
+    if (strlen(nombre_cliente) == 0 || strlen(nombre_cliente) > 50) {
+        printf("[ERROR] = POR FAVOR DIGITE UN NOMBRE VALIDO\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+
+    if (StringSoloConLetras(nombre_cliente) == 0) {
+        printf("[ERROR] = POR FAVOR DIGITE UN NOMBRE VALIDO\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+
+    int id_area_produccion = 0;
+    printf("\n");
+    MostrarListaDeAreas();
+
+    printf("\n[!] Digite el id del area de produccion: ");
+    scanf("%d",&id_area_produccion);
+    if (id_area_produccion == 0) {
+        printf("[ERROR] = POR FAVOR DIGITE UN ID VALIDO\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+
+    if (!ExisteAreaProduccion(id_area_produccion)) {
+        printf("[ERROR] = POR FAVOR DIGITE UN ID VALIDO\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+    Area area_elegida = ObtenerAreaProduccion(id_area_produccion);
+
+    int dia_factura = 0;
+    int mes_factura = 0;
+    int anio_factura = 0;
+
+    printf("\n[!] Digite el dia de la factura: ");
+    scanf("%d",&dia_factura);
+    printf("\n[!] Digite el mes de la factura: ");
+    scanf("%d",&mes_factura);
+    printf("\n[!] Digite el anio de la factura: ");
+    scanf("%d",&anio_factura);
+    if (dia_factura > 31 || dia_factura < 1 || mes_factura > 12 || mes_factura < 1 || anio_factura > 2050 || anio_factura < 2000) {
+        printf("[ERROR] = POR FAVOR DIGITE UNA FECHA VALIDA\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+
+    Factura fac;
+    Fecha fecha_factura;
+    fecha_factura.dia = dia_factura;
+    fecha_factura.mes = mes_factura;
+    fecha_factura.anio = anio_factura;
+    
+    strcpy(fac.nombre_comercio, comercio.nombre);
+    strcpy(fac.cedula_comercio, comercio.cedulaJuridica);
+    strcpy(fac.telefono_comercio, comercio.telefono);
+    strcpy(fac.nombre_cliente, nombre_cliente);
+    strcpy(fac.nombre_area, area_elegida.nombre);
+    fac.fecha_facturacion = fecha_factura;
+    fac.id_area = id_area_produccion;
+    fac.subtotal = subtotal;
+    fac.impuesto = iva;
+    fac.total = total;
+
+    int id_factura = 0;
+    id_factura = RegistrarFactura(fac);
+    if (id_factura == 0) {
+        printf("[ERROR] = POR FAVOR INTENTE NUEVAMENTE\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+
+    Factura factura_registrada = ObtenerFactura(id_factura);
+
+    // Registrar todos los productos a la factura
+    RegistrarDetallesFacturaEnBdd(lineasFactura, cant_prod_elegidos, id_factura);
+
+    system("clear");
+    printf("============ [FACTURA] ============\n");
+    printf("[i] Cedula juridica del comercio: %s", comercio.cedulaJuridica);
+    printf("\n[i] Nombre del comercio: %s", comercio.nombre);
+    printf("\n[i] Telefono del comercio: %s", comercio.telefono);
+    printf("\n[i] Area de produccion: %s", area_elegida.nombre);
+    printf("\n[i] Nombre del cliente: %s", nombre_cliente);
+    printf("\n[i] Fecha de la factura: %d/%d/%d", dia_factura, mes_factura, anio_factura);
+    printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
+    subtotal = 0;
+    iva = 0;
+    total = 0;
+    for (int i = 0;i < cant_prod_elegidos;i++) {
+        char xd[51];
+        strcpy(xd, lineasFactura[i].id_producto);
+        Producto p = ObtenerProductoExistente((char*)xd);
+        double subtotal_linea = (p.costo * lineasFactura[i].cantidad);
+        double iva_linea = (p.costo * lineasFactura[i].cantidad) * (p.impuesto / 100);
+        double total_linea = subtotal_linea + iva_linea;
+        printf(
+            "[%s / %15s] Cantidad: %5d\t | Subtotal: %10.2f\t | IVA(%.2f%): %10.2f\t | Total: %12.2f\n",
+            p.id,
+            p.nombre,
+            lineasFactura[i].cantidad,
+            subtotal_linea,
+            p.impuesto,
+            iva_linea,
+            total_linea
+        );
+        subtotal += subtotal_linea;
+        iva += iva_linea;
+        total += total_linea;
+    }
+    printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    printf(">>> Totales (montos finales)\n");
+    printf("Subtotal = %.2f | IVA = %.2f | Total = %.2f", subtotal, iva, total);
+    printf("\n==============================================\n");
+    CargarFacturasDesdeBdd();
+    PauseSinTimer(2);
+}
+
 /*****Nombre***************************************
 * VerificarNumero
 *****Descripción**********************************
