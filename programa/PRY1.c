@@ -169,6 +169,17 @@ bool CargarEmpleadosDesdeBdd() {
     return true;
 }
 
+bool CargarFacturasDesdeBdd() {
+    Factura* facturasBdd = ObtenerFacturasComercio((char*)"001");
+    int cantidadFacturasBdd = ObtenerCantidadFacturas((char*)"001");
+    if (facturasBdd == NULL || cantidadFacturasBdd == -1 ) {
+        return false;
+    }
+    facturas = facturasBdd;
+    cantidadFacturas = cantidadFacturasBdd;
+    return true;
+}
+
 // Se cargan de forma inicial las areas del negocio de la bdd
 bool CargarAreasDesdeBdd() {
     listaAreas = ObtenerAreas();
