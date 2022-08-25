@@ -238,12 +238,105 @@ DetalleFactura* ObtenerDetallesFactura(int id_factura) {
         p.costo = atof(row[2]);
         p.impuesto = atof(row[3]);
         detalles[i].producto = p;
-        detalles[i].cantidad = atoi(row[1]);
+        detalles[i].cantidad = atoi(row[4]);
         row = mysql_fetch_row(res);
     }
     mysql_free_result(res);
     mysql_close(conn);
     return detalles;
 }
+
+Factura* ObtenerFacturasComercio(char* cedula_comercio) {
+    MYSQL *conn = Conectar();
+    char query[250];
+    sprintf(query, "CALL get_facturas('%s')", cedula_comercio);
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        printf("Error al obtener las facturas del comercio: %s\n", mysql_error(conn));
+        return NULL;
+    }
+    
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    int cantidad = mysql_num_rows(res);
+    Factura *facturas = malloc(cantidad * sizeof *facturas);
+    for (int i = 0; i < cantidad; i++) {
+        Factura f;
+        strcpy(f.nombre_comercio, row[0]);
+        strcpy(f.cedula_comercio, row[1]);
+        strcpy(f.telefono_comercio, row[2]);
+        f.id_factura = atoi(row[3]);
+        strcpy(f.nombre_cliente, row[4]);
+        char *fecha_str = row[5];
+        Fecha fecha;
+        sscanf(fecha_str, "%d-%d-%d", &fecha.dia, &fecha.mes, &fecha.anio);
+        f.fecha_facturacion = fecha;
+        strcpy(f.nombre_area, row[6]);
+        f.subtotal = atof(row[7]);
+        f.impuesto = atof(row[8]);
+        f.total = atof(row[9]);
+        facturas[i] = f;
+        row = mysql_fetch_row(res);
+    }
+    mysql_free_result(res);
+    mysql_close(conn);
+    return facturas;
+}
+
+Factura* ObtenerFacturasPorAnio(int p_anio) {
+    MYSQL *conn = Conectar();
+    char query[250];
+    sprintf(query, "CALL get_facturas_por_anio(%i)", p_anio);
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        printf("Error al obtener las facturas del comercio: %s\n", mysql_error(conn));
+        return NULL;
+    }
+    
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    int cantidad = mysql_num_rows(res);
+    Factura *facturas = malloc(cantidad * sizeof *facturas);
+    for (int i = 0; i < cantidad; i++) {
+        Factura f;
+        strcpy(f.nombre_comercio, row[0]);
+        strcpy(f.cedula_comercio, row[1]);
+        strcpy(f.telefono_comercio, row[2]);
+        f.id_factura = atoi(row[3]);
+        strcpy(f.nombre_cliente, row[4]);
+        char *fecha_str = row[5];
+        Fecha fecha;
+        sscanf(fecha_str, "%d-%d-%d", &fecha.dia, &fecha.mes, &fecha.anio);
+        f.fecha_facturacion = fecha;
+        strcpy(f.nombre_area, row[6]);
+        f.subtotal = atof(row[7]);
+        f.impuesto = atof(row[8]);
+        f.total = atof(row[9]);
+        facturas[i] = f;
+        row = mysql_fetch_row(res);
+    }
+    mysql_free_result(res);
+    mysql_close(conn);
+    return facturas;
+}
+
+int ObtenerCantidadFacturas(char* cedula_comercio) {
+    MYSQL *conn = Conectar();
+    char query[250];
+    sprintf(query, "CALL get_cantidad_facturas('%s')", cedula_comercio);
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        printf("Error al obtener la cantidad de facturas del comercio: %s\n", mysql_error(conn));
+        return -1;
+    }
+    
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    int cantidad = atoi(row[0]);
+    mysql_free_result(res);
+    mysql_close(conn);
+    return cantidad;
+}
+
 
 #endif // FACTURA_DAO_H
