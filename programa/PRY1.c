@@ -1384,6 +1384,46 @@ bool StringSoloConLetras(char* cadena) {
     return true;
 }
 
+
+void ConsultarFacturasCargadas() {
+    printf("==================[ FACTURAS ]==================\n");
+    for (int i = 0; i < cantidadFacturas; i++) {
+        printf("Id de la factura: %i", facturas[i].id_factura);
+        printf("\nNombre del comercio: %s", facturas[i].nombre_comercio);
+        printf("\nCedula del comercio: %s", facturas[i].cedula_comercio);
+        printf("\nTelefono del comercio: %s", facturas[i].telefono_comercio);
+        printf("\nNombre del cliente: %s", facturas[i].nombre_cliente);
+        printf("\nFecha de la factura: %i-%i-%i", facturas[i].fecha_facturacion.dia, facturas[i].fecha_facturacion.mes, facturas[i].fecha_facturacion.anio);
+        printf("\nNombre del area de produccion: %s", facturas[i].nombre_area);
+        printf("\n\n");
+        
+        DetalleFactura* detalleFactura = ObtenerDetallesFactura(facturas[i].id_factura);
+        int cantidad_detalles = ObtenerCantidadDeDetalles(facturas[i].id_factura);
+
+        printf("~~~~~~~~~~~~~~[ LINEAS DE FACTURA ]~~~~~~~~~~~~~\n");
+        for (int j = 0; j < cantidad_detalles; j++) {
+            Producto p = detalleFactura[j].producto;
+            printf(
+                "[%2i] %15s | Cantidad: %8i | Costo: %10.2f | IVA(%2.2f%): %10.2f |  Total: %10.2f\n", 
+                j,
+                p.nombre,
+                detalleFactura[j].cantidad,
+                (p.costo * detalleFactura[j].cantidad),
+                (p.impuesto / 100),
+                (p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100),
+                (p.costo * detalleFactura[j].cantidad) + ((p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100))
+            );
+            printf("-------------------------------------------------------------------------------------------\n");
+        }
+        printf("\n");
+        printf("Subtotal de factura: %10.2f\n", facturas[i].subtotal);
+        printf("IVA de factura: %10.2f\n", facturas[i].impuesto);
+        printf("Total de factura: %10.2f\n", facturas[i].total);
+        printf("**********************************************************\n");
+        printf("**********************************************************\n");
+    }
+}
+
 /*****Nombre***************************************
 * CedulaFueElegida
 *****Descripción**********************************
@@ -1425,6 +1465,20 @@ bool VerificarCedulaEmpleado(char* cedula_elegida) {
     }
     return false;
 }
+
+Area ObtenerAreaProduccion(int id_area) {
+    Area area;
+    for (int i = 0;i < cantidadAreas;i++) {
+        if (listaAreas[i].id == id_area) {
+            area.id = listaAreas[i].id;
+            strcpy(area.nombre, listaAreas[i].nombre);
+            area.dimensiones = listaAreas[i].dimensiones;
+            strcpy(area.producto_principal, listaAreas[i].producto_principal);
+        }
+    }
+    return area;
+}
+
 
 /*****Nombre***************************************
 * ImprimirListaDeEmpleados
