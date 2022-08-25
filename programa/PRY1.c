@@ -33,10 +33,10 @@
 
 bool RegistrarOperadorInicial();
 bool CargarComercioDesdeBdd();
-void CargarProductosDesdeBdd();
 bool CargarFacturasDesdeBdd();
-bool StringSoloConLetras(char* cadena);
+void CargarProductosDesdeBdd();
 bool CargarAreasDesdeBdd();
+bool StringSoloConLetras(char* cadena);
 bool CargarEmpleadosDesdeBdd();
 bool CargarProductosDesdeRuta();
 bool CargarPlanillasDesdeBdd();
@@ -56,10 +56,7 @@ void MostrarListaDeAreas();
 void MostrarTodasLasNominasConSalarios();
 void MostrarInformacionDelNegocio();
 void MostrarTodasLasNominas();
-void MenuRegistroVentaProducto();
 void ConsultarFacturasCargadas();
-Area ObtenerAreaProduccion(int id_area);
-bool ExisteAreaProduccion(int id_area_produccion);
 
 void Menu_01();
 void Menu_OP1();
@@ -73,19 +70,20 @@ void Menu_CV01();
 void Menu_BA01();
 void AgregarEmpleadosANomina(int mes, int anio);
 void AgregarEmpleadosANominaAux(Planilla plan, EmpleadoConRol* empleados_elegidos, int cant_empleados_restantes);
+Area ObtenerAreaProduccion(int id_area);
 char* Leer(FILE* archivo, int cont);
 bool Revisar01_Comas(char* texto, int cont);
 int ContarCaracteres(FILE *archivo);
 int ContarLineas(char* texto);
 bool Revisar(char* texto, int cont);
 bool VerificarNumero(char num[]);
+bool ExisteAreaProduccion(int id_area_produccion);
 bool ExisteNomina(int id_nomina);
 bool EliminarNomina(int id_nomina);
 void PauseSinTimer(int cantidadEnters);
 void Pause();
 
-LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad);
-
+static Factura* facturas; // Array de facturas
 static Operador operador; // Operador del sistema
 static Comercio comercio; // Comercio del sistema
 static Producto* listaProductos; // Lista de productos del sistema
@@ -95,8 +93,26 @@ static CargoSocial cargoSocial; // Cargo social para los empleados
 static int cantidadProductos; // Cantidad de productos del sistema
 static int cantidadAreas; // Cantidad de areas del sistema
 static int cantidadEmpleados; // Cantidad de empleados en el sistema
+static int cantidadFacturas; // Cantidad de facturas en el sistema
 static PlanillaConCantEmpleados* planillas; // Lista de planillas del sistema
 
+// Struct definido aqui ya que no tiene sentido definirlo en otro archivo
+struct lineaFactura {
+    char id_producto[51];
+    int cantidad;
+};
+
+typedef struct lineaFactura LineaFactura;
+
+LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad);
+void MenuRegistroVentaProducto(LineaFactura* lineasFactura, int cant_prod_elegidos);
+void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegidos);
+bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto);
+void AgregarRepetidoLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cant_prod_int);
+LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto prod);
+Producto ObtenerProductoExistente(char* xd);
+void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos);
+void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_elegidos, int id_factura);
 /*****Nombre***************************************
 * main
 *****Descripción**********************************
@@ -135,9 +151,12 @@ int main() {
     if (!CargarCargasSocialesDesdeBdd()) {
         return main();
     }
-    printf("[OK] Cargas Sociales caMostrarTodasLasNominasrgadas desde base de datos\n");
+    printf("[OK] Cargas Sociales cargadas desde base de datos\n");
 
-    
+    if (!CargarFacturasDesdeBdd()) {
+        return main();
+    }
+    printf("[OK] Facturas cargadas desde base de datos\n");
     // Planillas - planillas del negocio (si hay alguna)
     CargarPlanillasDesdeBdd();
 
@@ -146,6 +165,17 @@ int main() {
 
     Menu_01();
     return 0;
+}
+
+bool CargarFacturasDesdeBdd() {
+    Factura* facturasBdd = ObtenerFacturasComercio((char*)"001");
+    int cantidadFacturasBdd = ObtenerCantidadFacturas((char*)"001");
+    if (facturasBdd == NULL || cantidadFacturasBdd == -1 ) {
+        return false;
+    }
+    facturas = facturasBdd;
+    cantidadFacturas = cantidadFacturasBdd;
+    return true;
 }
 
 bool CargarPlanillasDesdeBdd() {
@@ -173,17 +203,6 @@ bool CargarEmpleadosDesdeBdd() {
     if (listaEmpleados == NULL) {
         return false;
     }
-    return true;
-}
-
-bool CargarFacturasDesdeBdd() {
-    Factura* facturasBdd = ObtenerFacturasComercio((char*)"001");
-    int cantidadFacturasBdd = ObtenerCantidadFacturas((char*)"001");
-    if (facturasBdd == NULL || cantidadFacturasBdd == -1 ) {
-        return false;
-    }
-    facturas = facturasBdd;
-    cantidadFacturas = cantidadFacturasBdd;
     return true;
 }
 
@@ -252,7 +271,7 @@ void Menu_01() {
     fflush(stdin);
     printf("GESTIÓN DE PRODUCCIÓN AGRÍCOLA [GPA]");
     char opcion_01[BUFFER];
-    printf("\n1.Opciones operativas\n2.Opciones administrativas\n>");
+    printf("\n1.Opciones operativas\n2.Opciones administrativas\n3.Salir\n>");
     scanf("%s",&opcion_01);
     if (!VerificarNumero(opcion_01)) {
         printf("[ERROR] <= POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
@@ -268,6 +287,8 @@ void Menu_01() {
         case 2:
             Menu_OA1();
             break;
+        case 3:
+            exit(-1);
         default:
             printf("[ERROR] <= POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
             Pause();
@@ -298,6 +319,8 @@ void Menu_OP1() {
     printf("contrasena:");
     char contrasena[BUFFER];
     scanf("%s",&contrasena);
+    
+    // TODO: Revisar inconsistencia credenciales
 
     char clave_encriptada[BUFFER];
     Encriptar(contrasena, clave_encriptada);
@@ -390,6 +413,12 @@ void Menu_OP2() {
             PauseSinTimer(2);
             break;
         case 4:
+            if (cantidadProductos == 0) {
+                printf("[!] No hay PRODUCTOS!\n");
+                    Pause();
+                    Menu_OP2();
+                    return;
+            }
             MostrarListaDeProductos();
             PauseSinTimer(2);
             break;
@@ -536,6 +565,7 @@ bool CargarProductosDesdeRuta() {
 
                     // Verificando el costo (double)
                     if (!VerificarDouble(campos[2])) {
+                        printf("%s\n",campos[2]);
                         printf("\n[ERROR] <= EL COSTO DEL PRODUCTO NO ES UN NUMERO VALIDO!!\n");
                         Pause();
                         return false;
@@ -593,11 +623,16 @@ bool CargarProductosDesdeRuta() {
 bool VerificarDouble(char* texto) {
     char* puntero = texto;
     int contador = 0;
-    while (*puntero != '\0' || *puntero != '\n') {
-        if (*puntero == 10) {
+    while (*puntero != '\0' || *puntero != '\n' || *puntero != '\r' || *puntero != 0) {
+        if (*puntero == 10 || *puntero == 0 || *puntero == 13) {
             break;
         }
         if (!isdigit(*puntero) && *puntero != '.') {
+            printf("A | %c | %i \n",*puntero, *puntero);
+            return false;
+        }
+        if (!isdigit(*puntero) && *puntero != '.') {
+            printf("E: %c, %i\n",*puntero, *puntero);
             return false;
         }
         // Contar cada punto decimal
@@ -809,6 +844,15 @@ void Menu_OA1() {
             MenuEliminarNomina();
             break;
         case 4:
+            if (cantidadProductos == 0) {
+                printf("[ERROR] = NO HAY PRODUCTOS REGISTRADOS!\n");
+                PauseSinTimer(2);
+                Menu_OA1();
+                return;
+            }
+            LineaFactura* lineasFactura = malloc(cantidadProductos * sizeof *lineasFactura);
+
+            MenuRegistroVentaProducto(lineasFactura, 0);
             break;
         case 5:
             planillas = ObtenerPlanillasConCantEmpleados();
@@ -822,7 +866,14 @@ void Menu_OA1() {
             PauseSinTimer(2);
             break;
         case 6:
-            Menu_CV01();
+            if (cantidadFacturas == 0) {
+                printf("[ERROR] = NO HAY FACTURAS REGISTRADAS!\n");
+                PauseSinTimer(2);
+                Menu_OA1();
+                return;
+            }
+            ConsultarFacturasCargadas();
+            PauseSinTimer(2);
             break;
         case 7:
             Menu_BA01();
@@ -838,129 +889,44 @@ void Menu_OA1() {
     }
 }
 
-void MenuEliminarNomina() {
-    system("clear");
-    printf("[ELIMINAR NOMINA]\n");
+void ConsultarFacturasCargadas() {
+    printf("==================[ FACTURAS ]==================\n");
+    for (int i = 0; i < cantidadFacturas; i++) {
+        printf("Id de la factura: %i", facturas[i].id_factura);
+        printf("\nNombre del comercio: %s", facturas[i].nombre_comercio);
+        printf("\nCedula del comercio: %s", facturas[i].cedula_comercio);
+        printf("\nTelefono del comercio: %s", facturas[i].telefono_comercio);
+        printf("\nNombre del cliente: %s", facturas[i].nombre_cliente);
+        printf("\nFecha de la factura: %i-%i-%i", facturas[i].fecha_facturacion.dia, facturas[i].fecha_facturacion.mes, facturas[i].fecha_facturacion.anio);
+        printf("\nNombre del area de produccion: %s", facturas[i].nombre_area);
+        printf("\n\n");
+        
+        DetalleFactura* detalleFactura = ObtenerDetallesFactura(facturas[i].id_factura);
+        int cantidad_detalles = ObtenerCantidadDeDetalles(facturas[i].id_factura);
 
-    MostrarTodasLasNominas();
-    printf("\n------------------------------\n");
-    printf("Ingrese el [numero] de la nomina a eliminar: ");
-    printf("\n(O presione 0 para volver al menu anterior)");
-    printf("\n>");
-    char opcion_01[BUFFER];
-    scanf("%s",&opcion_01);
-    if (!VerificarNumero(opcion_01)) {
-        printf("[ERROR] = POR FAVOR DIGITE UN NUMERO VALIDO!\n");
-        PauseSinTimer(2);
-        MenuEliminarNomina();
-        return;
-    }
-    int opcion_02 = strtol(opcion_01,NULL,10);
-    if (opcion_02 == 0) {
-        Menu_OA1();
-        return;
-    }
-    if (ExisteNomina(opcion_02)) {
-        if (EliminarNomina(opcion_02)) {
-            printf("[EXITO] = NOMINA (%i) ELIMINADA CON EXITO!\n", opcion_02);
-            PauseSinTimer(2);
+        printf("~~~~~~~~~~~~~~[ LINEAS DE FACTURA ]~~~~~~~~~~~~~\n");
+        for (int j = 0; j < cantidad_detalles; j++) {
+            Producto p = detalleFactura[j].producto;
+            printf(
+                "[%2i] %15s | Cantidad: %8i | Costo: %10.2f | IVA(%2.2f%): %10.2f |  Total: %10.2f\n", 
+                j,
+                p.nombre,
+                detalleFactura[j].cantidad,
+                (p.costo * detalleFactura[j].cantidad),
+                (p.impuesto / 100),
+                (p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100),
+                (p.costo * detalleFactura[j].cantidad) + ((p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100))
+            );
+            printf("-------------------------------------------------------------------------------------------\n");
         }
-        else {
-            printf("[ERROR] = NO SE PUDO ELIMINAR LA NOMINA (%i)!\n", opcion_02);
-            PauseSinTimer(2);
-        }
-    }
-    else {
-        printf("[ERROR] = NO EXISTE UNA NOMINA CON EL NUMERO (%i)!\n", opcion_02);
-        PauseSinTimer(2);
-        MenuEliminarNomina();
-        return;
+        printf("\n");
+        printf("Subtotal de factura: %10.2f\n", facturas[i].subtotal);
+        printf("IVA de factura: %10.2f\n", facturas[i].impuesto);
+        printf("Total de factura: %10.2f\n", facturas[i].total);
+        printf("**********************************************************\n");
+        printf("**********************************************************\n");
     }
 }
-
-bool ExisteNomina(int id_nomina) {
-    int i = 0;
-    while (planillas[i].id != -1) {
-        if (planillas[i].id == id_nomina) return true;
-        i++;
-    }
-    return false;
-}
-
-bool EliminarNomina(int id_nomina) {
-    int i = 0;
-    while (planillas[i].id != -1) {
-        if (planillas[i].id == id_nomina) {
-            Fecha fecha = planillas[i].fecha;
-            if (EliminarPlanillaPorFecha(fecha)) {
-                planillas = ObtenerPlanillasConCantEmpleados();
-                return true;
-            }
-        }
-        i++;
-    }
-    return false;
-}
-
-void MostrarTodasLasNominasConSalarios() {
-    PlanillaConCantEmpleados* p = ObtenerPlanillasConCantEmpleados();
-    if (p == NULL) {
-        printf("[ERROR] = NO HAY NOMINAS REGISTRADAS!\n");
-        PauseSinTimer(2);
-        return;
-    }
-    int i = 0;
-    printf("\n>>> Lista de nominas\n");
-    while (p[i].id != -1) {
-        printf("----------------------------------\n");
-        printf("Nomina: %i\n", p[i].id);
-        printf("Fecha: 1/%i/%i\n", p[i].fecha.mes, p[i].fecha.anio);
-        printf("Cantidad de empleados: %i\n", p[i].cantidad_empleados);
-        printf("Porcentaje de carga social: %.2f%\n", p[i].monto_carga_social * 100);
-        printf("\n ~~ Empleados ~~\n");
-
-        double subtotal_salarios = 0;
-        double total_salarios = 0;
-
-        for (int j = 0; j < p[i].cantidad_empleados; j++) {
-            printf("\n\n");
-            printf("Nombre: %s", listaEmpleados[j].nombre_completo);
-            printf("\n");
-            printf("Cedula: %s", listaEmpleados[j].cedula);
-            printf("\n");
-            printf("Sueldo: %.2f", listaEmpleados[j].salario_mensual);
-            printf("\n");
-            printf("Puesto: %s", listaEmpleados[j].nombre_rol);
-
-            subtotal_salarios += listaEmpleados[j].salario_mensual;
-            total_salarios += (listaEmpleados[j].salario_mensual * (p[i].monto_carga_social));
-        }
-
-        printf("\nSubtotal de salarios (sin cargas): %.2f\n", subtotal_salarios);
-        printf("\nTotal de salarios (con cargas): %.2f\n\n", total_salarios);
-
-        i++;
-    }
-}
-
-void MostrarTodasLasNominas() {
-    PlanillaConCantEmpleados* planillas = ObtenerPlanillasConCantEmpleados();
-    printf("\n>>> Lista de nominas\n");
-    printf("\n");
-    int i = 0;
-    while (planillas[i].id != -1) {
-        printf(
-            "[%i] Fecha: 1/%i/%i | Carga social: %.2f% | Cantidad de empleados: %i\n",
-            planillas[i].id,
-            planillas[i].fecha.mes,
-            planillas[i].fecha.anio,
-            (planillas[i].monto_carga_social * 100),
-            planillas[i].cantidad_empleados
-        );
-        i++;
-    }
-}
-
 
 void MenuRegistroVentaProducto(LineaFactura* lineasFactura, int cant_prod_elegidos) {
     system("clear");
@@ -1156,635 +1122,6 @@ void MenuRegistroVentaProducto(LineaFactura* lineasFactura, int cant_prod_elegid
     return;
 }
 
-/*****Nombre***************************************
-* Menu_VI01
-*****Descripción**********************************
-* Menu de gestion de valores iniciales
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_VI01() {
-    system("clear");
-    printf("[MENU DE VALORES INICIALES]\n");
-    printf("1. Ver informacion del negocio\n");
-    printf("2. Modificar el valor de las cargas sociales\n");
-    printf("0. Volver\n");
-    printf(">");
-
-    char opcion_01[BUFFER];
-    scanf("%s",&opcion_01);
-    if (!VerificarNumero(opcion_01)) {
-        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-        PauseSinTimer(2);
-        Menu_VI01();
-        return;
-    }
-    int opcion_02 = strtol(opcion_01,NULL,10);
-    switch(opcion_02) {
-        case 1:
-            MostrarInformacionDelNegocio();
-            PauseSinTimer(2);
-            break;
-        case 2:
-            CambiarValorDeCargaSocial();
-            break;
-        case 0:
-            Menu_OA1();
-            return;
-        default:
-            printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-            Pause();
-            break;
-    }
-    Menu_VI01();
-}
-
-/*****Nombre***************************************
-* CambiarValorDeCargaSocial
-*****Descripción**********************************
-* Cambia el valor de las cargas sociales con un
-* valor nuevo digitado por el usuario
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void CambiarValorDeCargaSocial() {
-    system("clear");
-    printf("[CAMBIO DE VALOR DE CARGA SOCIAL]\n");
-    printf(
-        "[!] Valor actual porcentual: %.2f | %.2f%\n",
-        cargoSocial.porcentaje,
-        (cargoSocial.porcentaje * 100)
-    );
-    printf("[!] Ingrese el nuevo valor (porcentual), o presione enter para no cambiarlo: ");
-    getchar();
-
-    char opcion_01[BUFFER];
-    fgets(opcion_01,BUFFER,stdin);
-
-    printf("%s", opcion_01);
-    if (opcion_01[0] == '\n' && opcion_01[1] == '\0') {
-        printf("[!] No se ha cambiado el valor\n");
-        PauseSinTimer(1);
-        return;
-    }
-    if (!VerificarDouble(opcion_01)) {
-        printf("[ERROR] = POR FAVOR DIGITE UN VALOR NUMERICO FLOTANTE!\n");
-        PauseSinTimer(3);
-        CambiarValorDeCargaSocial();
-        return;
-    }
-    double valor = strtod(opcion_01,NULL);
-    if (valor<1 || valor>5) {
-        printf("[ERROR] = POR FAVOR DIGITE UN VALOR ENTRE 1 Y 5!\n");
-        PauseSinTimer(2);
-        CambiarValorDeCargaSocial();
-        return;
-    }
-    cargoSocial.porcentaje = valor;
-    ModificarCargoSocial((char*)"General", valor);
-    printf("[!] Valor cambiado\n");
-    PauseSinTimer(2);
-}
-
-/*****Nombre***************************************
-* MostrarInformacionDelNegocio
-*****Descripción**********************************
-* Muestra la informacion del negocio en pantalla
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void MostrarInformacionDelNegocio() {
-    printf("============[INFORMACION DEL COMERCIO]============\n");
-    printf("Cedula del negocio: %s\n", comercio.cedulaJuridica);
-    printf("Nombre del negocio: %s\n", comercio.nombre);
-    printf("Telefono del negocio: %s\n", comercio.telefono);
-    printf("Num. siguiente factura: %d\n", comercio.numSigFactura);
-
-}
-
-/*****Nombre***************************************
-* Menu_RN01
-*****Descripción**********************************
-* Menu de gestion de regitro de nominas
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_RN01() {
-    system("clear");
-    printf("[REGISTRO DE NOMINAS]\n");
-    
-    char mes_nomina[3];
-    printf("Ingrese el mes de la nomina: ");
-    scanf("%s",&mes_nomina);
-    if (!VerificarNumero(mes_nomina)) {
-        printf("[ERROR] <= DEBE DIGITAR UN NUMERO PARA EL MES DE LA NOMINA!\n");
-        PauseSinTimer(2);
-        Menu_RN01();
-        return;
-    }
-    int mes_nomina_int = strtol(mes_nomina,NULL,10);
-    if (mes_nomina_int<1 || mes_nomina_int>12) {
-        printf("[ERROR] <= DEBE DIGITAR UN NUMERO ENTRE 1 Y 12 PARA EL MES DE LA NOMINA!\n");
-        PauseSinTimer(2);
-        Menu_RN01();
-        return;
-    }
-
-    char anio_nomina[3];
-    printf("Ingrese el anio de la nomina: ");
-    scanf("%s",&anio_nomina);
-    if (!VerificarNumero(anio_nomina)) {
-        printf("[ERROR] <= DEBE DIGITAR UN NUMERO PARA EL ANIO DE LA NOMINA!\n");
-        PauseSinTimer(2);
-        Menu_RN01();
-        return;
-    }
-    int anio_nomina_int = strtol(anio_nomina,NULL,10);
-
-    time_t tiempo;
-    struct tm *tm;
-    time(&tiempo);
-    tm = localtime(&tiempo);
-
-    int anio_actual = tm->tm_year + 1900;
-
-    if (anio_nomina_int<(anio_actual-5) || anio_nomina_int>(anio_actual + 5)) {
-        printf("[ERROR] <= DEBE DIGITAR UN NUMERO VALIDO PARA EL ANIO DE LA NOMINA!\n");
-        printf("(Sin exceder de 5 anios antes y 5 anios despues del anio actual)\n");
-        PauseSinTimer(2);
-        Menu_RN01();
-        return;
-    }
-
-    AgregarEmpleadosANomina(mes_nomina_int, anio_nomina_int);
-}
-
-/*****Nombre***************************************
-* AgregarEmpleadosANomina
-*****Descripción**********************************
-* Agrega los empleados a la nomina, este primer
-* menu es para agregar definir y registrar una
-* nomina para posteriormente poder agregar los
-* empleados a la nomina
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* int mes: mes de la nomina
-* int anio: anio de la nomina
-**************************************************/
-void AgregarEmpleadosANomina(int mes, int anio) {
-    system("clear");
-    printf("[REGISTRO DE NOMINAS]\n");
-    printf("Fecha (mes: %d/ anio: %d)\n", mes, anio);
-    printf("Monto porcentual de cargas sociales: %.2f%\n", cargoSocial.porcentaje * 100);
-    printf("¿Los valores son correctos? (s/n): ");
-    char opcion_01[BUFFER];
-    scanf("%s",opcion_01);
-    if (strcmp(opcion_01,"s") == 0 || strcmp(opcion_01,"S") == 0) {
-        Fecha fecha_planilla = {
-            .dia = 1,
-            .mes = mes,
-            .anio = anio
-        };
-
-        Planilla plan = ObtenerPlanillaPorFecha(fecha_planilla);
-        if (plan.id != -1) {
-            printf("[ERROR] <= UNA PLANILLA YA SE ENCUENTRA REGISTRADA EN ESA FECHA!\n");
-            printf("id planilla: %d\n", plan.id);
-            Fecha f = plan.fecha;
-            printf("fecha: %d/%d/%d\n", f.dia, f.mes, f.anio);
-            PauseSinTimer(2);
-            Menu_RN01();
-            return;
-        }
-
-        plan.fecha = fecha_planilla;
-        
-        // La planilla no existe, se procede a crear.
-        if (RegistrarPlanilla(plan)) {
-            plan = ObtenerPlanillaPorFecha(fecha_planilla);
-            EmpleadoConRol* empleados_elegidos = malloc(cantidadEmpleados * sizeof *empleados_elegidos);
-            MostrarListaDeEmpleados();
-            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cantidadEmpleados);
-            return;
-        }
-        printf("[ERROR] <= NO SE PUDO REGISTRAR LA PLANILLA!\n");
-        PauseSinTimer(2);
-        Menu_RN01();
-        return;
-    }
-    if (strcmp(opcion_01,"n") == 0 || strcmp(opcion_01,"N") == 0) {
-        printf("[!] Se cancelo el registro, volviendo al menu anterior\n");
-        PauseSinTimer(2);
-        Menu_RN01();
-        return;
-    }
-    printf("[ERROR] <= DEBE DIGITAR S O N PARA CONFIRMAR O NO CONFIRMAR LA FECHA!\n");
-    PauseSinTimer(2);
-    Menu_RN01();
-}
-
-void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegidos) {
-    printf("cantidad de productos elegidos: %d\n",cant_prod_elegidos);
-    for (int i = 0; i < cant_prod_elegidos; i++) {
-        printf("[%s] - Cantidad: %d\n", lineasFactura[i].id_producto, lineasFactura[i].cantidad);
-    }
-}
-
-
-bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto) {
-    for (int i = 0; i < cant_prod_elegidos; i++) {
-        if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void AgregarRepetidoLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cant_prod_int) {
-    for (int i = 0; i < cant_prod_elegidos; i++) {
-        if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
-            lineasFactura[i].cantidad += cant_prod_int;
-            return;
-        }
-    }
-}
-
-/*****Nombre***************************************
-* AgregarEmpleadosANominaAux
-*****Descripción**********************************
-* Una vez que se ha registrado la planilla o nomina,
-* se procede a agregar los empleados a la nomina
-* se les va a mostrar la lista de empleados registrados en
-* el sistema y se le va a pedir que seleccione los empleados
-* que se van a agregar a la nomina. Tambien, podra elegir
-* empleados previamente elegidos para eliminarlos de la nomina.
-* Y finalmente, registrar la nomina o cancelar el registro.
-*
-* El objetivo de esta funcion recursiva es que se puedan
-* ir agregando los empleados en la lista que es pasada por
-* referencia y que esta se pueda imprimir y actualizar a
-* medida que el usuario lo desee
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Planilla plan: planilla a la cual se le van a agregar los empleados
-* EmpleadoConRol* empleados_elegidos: lista de empleados elegidos para la nomina (se va modificando)
-* int cantidad_empleados: cantidad de empleados que quedan por agregar a la nomina (servira para la recursion)
-**************************************************/
-void AgregarEmpleadosANominaAux(Planilla plan, EmpleadoConRol* empleados_elegidos, int cant_empleados_restantes) {
-    system("clear");
-    printf("[REGISTRO DE NOMINAS]\n");
-    printf("[PLANILLA %d/%d]\n", plan.fecha.mes, plan.fecha.anio);
-    printf("TOTAL DE EMPLEADOS: %d\n", cantidadEmpleados);
-    printf("EMPLEADOS RESTANTES: %d\n", cant_empleados_restantes);
-
-    MostrarListaDeEmpleados();
-    printf("\n >>> Empleados elegidos <<<\n");
-    ImprimirListaDeEmpleados(empleados_elegidos, cantidadEmpleados - cant_empleados_restantes);
-    printf("----------------------------------------------------\n");
-    printf("1. Agregar empleado |");
-    printf("2. Eliminar empleado | ");
-    printf("3. Terminar y registrar nomina |");
-    printf("0. Cancelar");
-
-    printf("\n>");
-    char opcion_01[BUFFER];
-    scanf("%s",opcion_01);
-    if (VerificarNumero(opcion_01)) {
-        int opcion_01_int = strtol(opcion_01,NULL,10);
-        if (opcion_01_int == 1) {
-            char cedula_elegida[BUFFER];
-            printf("Ingrese la cedula del empleado: ");
-            scanf("%s",cedula_elegida);
-            if (VerificarCedulaEmpleado(cedula_elegida)) {
-                // Verificar que no haya sido elegida
-                int aux = cantidadEmpleados - cant_empleados_restantes;
-                if (CedulaFueElegida(cedula_elegida, empleados_elegidos, aux)) {
-                    printf("[ERROR] <= LA CEDULA YA FUE ELEGIDA!\n");
-                    PauseSinTimer(2);
-                    AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-                    return;
-                }
-                EmpleadoConRol empleado_elegido = ObtenerEmpleadoConRol(cedula_elegida);
-                if (strcmp(empleado_elegido.cedula,"ND") != 0) {
-                    int aux = cantidadEmpleados - cant_empleados_restantes;
-                    empleados_elegidos[aux] = empleado_elegido;
-                    cant_empleados_restantes--;
-                    AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-                    return;
-                }
-            }
-            printf("[ERROR] <= EL EMPLEADO NO EXISTE!\n");
-            PauseSinTimer(1);
-            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-            return;
-        }
-        if (opcion_01_int == 2) {
-            char cedula_elegida[BUFFER];
-            printf("Ingrese la cedula del empleado: ");
-            scanf("%s",cedula_elegida);
-            if (VerificarCedulaEmpleado(cedula_elegida)) {
-                int aux = cantidadEmpleados - cant_empleados_restantes;
-                if (CedulaFueElegida(cedula_elegida, empleados_elegidos, aux)) {
-                    EliminarEmpleadoDeNomina(cedula_elegida, empleados_elegidos, cantidadEmpleados - cant_empleados_restantes);
-                    cant_empleados_restantes++;
-                    AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-                    return;
-                }
-                printf("[ERROR] <= LA CEDULA NO FUE ELEGIDA!\n");
-                PauseSinTimer(2);
-                AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-            }
-            printf("[ERROR] <= EL EMPLEADO NO EXISTE!\n");
-            PauseSinTimer(2);
-            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-            return;
-        }
-        if (opcion_01_int == 3) {
-            int cant_empleados_elegidos = cantidadEmpleados - cant_empleados_restantes;
-            system("clear");
-            if (cant_empleados_elegidos == 0) {
-                printf("[ERROR] <= NO SE HA ELEGIDO NINGUN EMPLEADO!\n");
-                PauseSinTimer(2);
-                AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-                return;
-            }
-            printf("[REGISTRO DE NOMINAS]\n");
-            printf("[PLANILLA %d/%d]\n", plan.fecha.mes, plan.fecha.anio);
-            printf("CANT. EMPLEADOS ELEGIDOS: %d\n", cant_empleados_elegidos);
-            printf("-------------------------------");
-            printf("\n >>> Empleados elegidos <<<\n");
-            ImprimirListaDeEmpleados(empleados_elegidos, cant_empleados_elegidos);
-            printf("\n-------------------------------");
-            char confirmacion[BUFFER];
-            printf("[!] ¿Esta seguro de que desea registrar la nomina? (s/n): ");
-            printf("\n> ");
-            scanf("%s",confirmacion);
-            if (strcmp(confirmacion, "s") == 0 || strcmp(confirmacion, "S")) {
-                // Registro de empleados en la bdd
-                bool exito = true;
-                for (int i = 0; i < cant_empleados_elegidos; i++) {
-                    if (RegistrarEmpleadoAPlanilla(plan.fecha, empleados_elegidos[i].cedula)) {
-                        continue;
-                    }
-                    exito = false;
-                    break;
-                }
-                if (exito) {
-                    printf(
-                        "\n[EXITO] <= LOS %d EMPLEADOS FUERON REGISTRADOS EN LA NOMINA!\n",
-                        cant_empleados_elegidos
-                    );
-                    PauseSinTimer(2);
-                    system("clear");
-                    return;
-                }
-                printf("[ERROR] <= NO SE PUDO REGISTRAR LA NOMINA CORRECTAMENTE!\n");
-                EliminarPlanillaPorFecha(plan.fecha);
-                PauseSinTimer(2);
-            }
-            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-            return;
-        }
-        if (opcion_01_int == 0) {
-            printf("[!] Se cancelo el registro, volviendo al menu anterior\n");
-            EliminarPlanillaPorFecha(plan.fecha);
-            PauseSinTimer(2);
-            Menu_RN01();
-            return;
-        }
-        printf("[ERROR] <= DEBE DIGITAR UN NUMERO ENTRE 0 Y 3 PARA ELEGIR UNA OPCION!\n");
-        PauseSinTimer(2);
-        AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
-        return;
-    }
-}
-
-/*****Nombre***************************************
-* EliminarEmpleadoDeNomina
-*****Descripción**********************************
-* Elimina un empleado de la lista de empleados elegidos para la nomina
-* utilizando la cedula del empleado como parametro
-*****Retorno**************************************
-* Sin retorno
-*****Entradas*************************************
-* char* cedula_elegida: cedula del empleado a eliminar
-* EmpleadoConRol* empleados_elegidos: lista de empleados elegidos para la nomina
-* int cant_empleados_restantes: cantidad de empleados restantes para la nomina
-**************************************************/
-void EliminarEmpleadoDeNomina(char* cedula, EmpleadoConRol* empleados_elegidos, int cant_empleados_elegidos) {
-    EmpleadoConRol* nuevos_empleados = malloc(cantidadEmpleados * sizeof *nuevos_empleados);
-    int indice = 0;
-
-    for (int i = 0; i < cant_empleados_elegidos; i++) {
-        if (strcmp(empleados_elegidos[i].cedula,cedula) == 0) {
-            continue;
-        }
-        EmpleadoConRol emp;
-        strcpy(emp.cedula, empleados_elegidos[i].cedula);
-        strcpy(emp.nombre_completo, empleados_elegidos[i].nombre_completo);
-        strcpy(emp.nombre_rol, empleados_elegidos[i].nombre_rol);
-        emp.salario_mensual = empleados_elegidos[i].salario_mensual;
-        nuevos_empleados[indice] = emp;
-        indice++;
-    }
-    empleados_elegidos = nuevos_empleados;
-}
-
-bool StringSoloConLetras(char* cadena) {
-    for (int i = 0;i < strlen(cadena);i++) {
-        if (cadena[i] == ' ' || cadena[i] == '\n') {
-            continue;
-        }
-        if (!isalpha(cadena[i]) && cadena[i] != ' ') {
-            return false;
-        }
-    }
-    return true;
-}
-
-
-void ConsultarFacturasCargadas() {
-    printf("==================[ FACTURAS ]==================\n");
-    for (int i = 0; i < cantidadFacturas; i++) {
-        printf("Id de la factura: %i", facturas[i].id_factura);
-        printf("\nNombre del comercio: %s", facturas[i].nombre_comercio);
-        printf("\nCedula del comercio: %s", facturas[i].cedula_comercio);
-        printf("\nTelefono del comercio: %s", facturas[i].telefono_comercio);
-        printf("\nNombre del cliente: %s", facturas[i].nombre_cliente);
-        printf("\nFecha de la factura: %i-%i-%i", facturas[i].fecha_facturacion.dia, facturas[i].fecha_facturacion.mes, facturas[i].fecha_facturacion.anio);
-        printf("\nNombre del area de produccion: %s", facturas[i].nombre_area);
-        printf("\n\n");
-        
-        DetalleFactura* detalleFactura = ObtenerDetallesFactura(facturas[i].id_factura);
-        int cantidad_detalles = ObtenerCantidadDeDetalles(facturas[i].id_factura);
-
-        printf("~~~~~~~~~~~~~~[ LINEAS DE FACTURA ]~~~~~~~~~~~~~\n");
-        for (int j = 0; j < cantidad_detalles; j++) {
-            Producto p = detalleFactura[j].producto;
-            printf(
-                "[%2i] %15s | Cantidad: %8i | Costo: %10.2f | IVA(%2.2f%): %10.2f |  Total: %10.2f\n", 
-                j,
-                p.nombre,
-                detalleFactura[j].cantidad,
-                (p.costo * detalleFactura[j].cantidad),
-                (p.impuesto / 100),
-                (p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100),
-                (p.costo * detalleFactura[j].cantidad) + ((p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100))
-            );
-            printf("-------------------------------------------------------------------------------------------\n");
-        }
-        printf("\n");
-        printf("Subtotal de factura: %10.2f\n", facturas[i].subtotal);
-        printf("IVA de factura: %10.2f\n", facturas[i].impuesto);
-        printf("Total de factura: %10.2f\n", facturas[i].total);
-        printf("**********************************************************\n");
-        printf("**********************************************************\n");
-    }
-}
-
-/*****Nombre***************************************
-* CedulaFueElegida
-*****Descripción**********************************
-* Pregunta si la cedula fue elegida para la nomina
-* utilizando la cedula del empleado como parametro
-*****Retorno**************************************
-* Un valor booleano que indica si la cedula fue elegida
-* true: si la cedula fue elegida
-* false: si la cedula no fue elegida
-*****Entradas*************************************
-* char* cedula_elegida: cedula del empleado a verificar
-* EmpleadoConRol* empleados_elegidos: lista de empleados elegidos para la nomina
-**************************************************/
-bool CedulaFueElegida(char* cedula, EmpleadoConRol* empleados_elegidos, int cant_empleados_restantes) {
-    for (int i = 0; i < cant_empleados_restantes; i++) {
-        if (strcmp(empleados_elegidos[i].cedula, cedula) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto prod) {
-    LineaFactura* lineasNuevas = malloc((cant_prod_elegidos-1) * sizeof(LineaFactura));
-    int i = 0;
-    int j = 0;
-    while (i < cant_prod_elegidos) {
-        if (strcmp(lineasFactura[i].id_producto, prod.id) != 0) {
-            LineaFactura lf;
-            strcpy(lf.id_producto, lineasFactura[i].id_producto);
-            lf.cantidad = lineasFactura[i].cantidad;
-            lineasNuevas[j] = lf;
-            j++;
-        }
-        i++;
-    }
-    free(lineasFactura);
-    return lineasNuevas;
-}
-
-/*****Nombre***************************************
-* VerificarCedulaEmpleado
-*****Descripción**********************************
-* Verifica que la cedula del empleado exista en el sistema
-*****Retorno**************************************
-* Un valor booleano que indica si la cedula existe
-* true: si la cedula existe
-* false: si la cedula no existe
-*****Entradas*************************************
-* char *cedula: cedula del empleado a verificar
-**************************************************/
-bool VerificarCedulaEmpleado(char* cedula_elegida) {
-    for (int i = 0; i < cantidadEmpleados; i++) {
-        if (strcmp(listaEmpleados[i].cedula, cedula_elegida) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-Area ObtenerAreaProduccion(int id_area) {
-    Area area;
-    for (int i = 0;i < cantidadAreas;i++) {
-        if (listaAreas[i].id == id_area) {
-            area.id = listaAreas[i].id;
-            strcpy(area.nombre, listaAreas[i].nombre);
-            area.dimensiones = listaAreas[i].dimensiones;
-            strcpy(area.producto_principal, listaAreas[i].producto_principal);
-        }
-    }
-    return area;
-}
-bool ExisteAreaProduccion(int id_area_produccion) {
-    for (int i = 0;i < cantidadAreas;i++) {
-        if (listaAreas[i].id == id_area_produccion) {
-            return true;
-        }
-    }
-    return false;
-}
-
-
-Producto ObtenerProductoExistente(char* xd) {
-    Producto p;
-    for (int i = 0; i < cantidadProductos; i++) {
-        if (strcmp(listaProductos[i].id, xd) == 0) {
-            strcpy(p.id, listaProductos[i].id);
-            strcpy(p.nombre, listaProductos[i].nombre);
-            p.costo = listaProductos[i].costo;
-            p.impuesto = listaProductos[i].impuesto;
-            return p;
-        }
-    }
-}
-
-
-/*****Nombre***************************************
-* ImprimirListaDeEmpleados
-*****Descripción**********************************
-* Muestra en pantalla a una lista de empleados
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* EmpleadoConRol* empleados_elegidos: lista de empleados
-**************************************************/
-void ImprimirListaDeEmpleados(EmpleadoConRol* empleados_elegidos, int cantidad_empleados) {
-    for (int i = 0; i < cantidad_empleados; i++) {
-        EmpleadoConRol empleado = empleados_elegidos[i];
-        printf(
-            " [%2i] Cedula: %9s\t | Nombre: %30s\t | Rol: %s\t | Salario: %.2f\n",
-            i+1,
-            empleado.cedula,
-            empleado.nombre_completo,
-            empleado.nombre_rol,
-            empleado.salario_mensual
-        );
-    }
-}
-
-LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad) {
-    LineaFactura* lineasNuevas = malloc((cant_prod_elegidos+1) * sizeof(LineaFactura));
-    for (int i = 0; i < cant_prod_elegidos; i++) {
-        lineasNuevas[i] = lineasFactura[i];
-    }
-    LineaFactura lf;
-    strcpy(lf.id_producto, producto.id);
-    lf.cantidad = cantidad;
-    lineasNuevas[cant_prod_elegidos] = lf;
-    free(lineasFactura);
-    return lineasNuevas;
-}
-
-
 void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos) {
     system("clear");
     printf("\n----------------------------------------\n");
@@ -1950,7 +1287,6 @@ void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos
     PauseSinTimer(2);
 }
 
-
 void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_elegidos, int id_factura) {
     for (int i = 0; i < cant_prod_elegidos; i++) {
         char id_producto[51];
@@ -1959,6 +1295,760 @@ void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_el
         RegistrarDetalleFactura(id_factura, prod, lineasFactura[i].cantidad);
     }
 }
+
+Area ObtenerAreaProduccion(int id_area) {
+    Area area;
+    for (int i = 0;i < cantidadAreas;i++) {
+        if (listaAreas[i].id == id_area) {
+            area.id = listaAreas[i].id;
+            strcpy(area.nombre, listaAreas[i].nombre);
+            area.dimensiones = listaAreas[i].dimensiones;
+            strcpy(area.producto_principal, listaAreas[i].producto_principal);
+        }
+    }
+    return area;
+}
+
+bool ExisteAreaProduccion(int id_area_produccion) {
+    for (int i = 0;i < cantidadAreas;i++) {
+        if (listaAreas[i].id == id_area_produccion) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool StringSoloConLetras(char* cadena) {
+    for (int i = 0;i < strlen(cadena);i++) {
+        if (cadena[i] == ' ' || cadena[i] == '\n') {
+            continue;
+        }
+        if (!isalpha(cadena[i]) && cadena[i] != ' ') {
+            return false;
+        }
+    }
+    return true;
+}
+
+Producto ObtenerProductoExistente(char* xd) {
+    Producto p;
+    for (int i = 0; i < cantidadProductos; i++) {
+        if (strcmp(listaProductos[i].id, xd) == 0) {
+            strcpy(p.id, listaProductos[i].id);
+            strcpy(p.nombre, listaProductos[i].nombre);
+            p.costo = listaProductos[i].costo;
+            p.impuesto = listaProductos[i].impuesto;
+            return p;
+        }
+    }
+}
+
+LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto prod) {
+    LineaFactura* lineasNuevas = malloc((cant_prod_elegidos-1) * sizeof(LineaFactura));
+    int i = 0;
+    int j = 0;
+    while (i < cant_prod_elegidos) {
+        if (strcmp(lineasFactura[i].id_producto, prod.id) != 0) {
+            LineaFactura lf;
+            strcpy(lf.id_producto, lineasFactura[i].id_producto);
+            lf.cantidad = lineasFactura[i].cantidad;
+            lineasNuevas[j] = lf;
+            j++;
+        }
+        i++;
+    }
+    free(lineasFactura);
+    return lineasNuevas;
+}
+
+void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegidos) {
+    printf("cantidad de productos elegidos: %d\n",cant_prod_elegidos);
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        printf("[%s] - Cantidad: %d\n", lineasFactura[i].id_producto, lineasFactura[i].cantidad);
+    }
+}
+
+bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto) {
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void AgregarRepetidoLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cant_prod_int) {
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
+            lineasFactura[i].cantidad += cant_prod_int;
+            return;
+        }
+    }
+}
+
+LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad) {
+    LineaFactura* lineasNuevas = malloc((cant_prod_elegidos+1) * sizeof(LineaFactura));
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        lineasNuevas[i] = lineasFactura[i];
+    }
+    LineaFactura lf;
+    strcpy(lf.id_producto, producto.id);
+    lf.cantidad = cantidad;
+    lineasNuevas[cant_prod_elegidos] = lf;
+    free(lineasFactura);
+    return lineasNuevas;
+}
+
+void MenuEliminarNomina() {
+    system("clear");
+    printf("[ELIMINAR NOMINA]\n");
+
+    MostrarTodasLasNominas();
+    printf("\n------------------------------\n");
+    printf("Ingrese el [numero] de la nomina a eliminar: ");
+    printf("\n(O presione 0 para volver al menu anterior)");
+    printf("\n>");
+    char opcion_01[BUFFER];
+    scanf("%s",&opcion_01);
+    if (!VerificarNumero(opcion_01)) {
+        printf("[ERROR] = POR FAVOR DIGITE UN NUMERO VALIDO!\n");
+        PauseSinTimer(2);
+        MenuEliminarNomina();
+        return;
+    }
+    int opcion_02 = strtol(opcion_01,NULL,10);
+    if (opcion_02 == 0) {
+        Menu_OA1();
+        return;
+    }
+    if (ExisteNomina(opcion_02)) {
+        if (EliminarNomina(opcion_02)) {
+            printf("[EXITO] = NOMINA (%i) ELIMINADA CON EXITO!\n", opcion_02);
+            PauseSinTimer(2);
+        }
+        else {
+            printf("[ERROR] = NO SE PUDO ELIMINAR LA NOMINA (%i)!\n", opcion_02);
+            PauseSinTimer(2);
+        }
+    }
+    else {
+        printf("[ERROR] = NO EXISTE UNA NOMINA CON EL NUMERO (%i)!\n", opcion_02);
+        PauseSinTimer(2);
+        MenuEliminarNomina();
+        return;
+    }
+}
+
+bool ExisteNomina(int id_nomina) {
+    int i = 0;
+    while (planillas[i].id != -1) {
+        if (planillas[i].id == id_nomina) return true;
+        i++;
+    }
+    return false;
+}
+
+bool EliminarNomina(int id_nomina) {
+    int i = 0;
+    while (planillas[i].id != -1) {
+        if (planillas[i].id == id_nomina) {
+            Fecha fecha = planillas[i].fecha;
+            if (EliminarPlanillaPorFecha(fecha)) {
+                planillas = ObtenerPlanillasConCantEmpleados();
+                return true;
+            }
+        }
+        i++;
+    }
+    return false;
+}
+
+void MostrarTodasLasNominasConSalarios() {
+    PlanillaConCantEmpleados* p = ObtenerPlanillasConCantEmpleados();
+    if (p == NULL) {
+        printf("[ERROR] = NO HAY NOMINAS REGISTRADAS!\n");
+        PauseSinTimer(2);
+        return;
+    }
+    int i = 0;
+    printf("\n>>> Lista de nominas\n");
+    while (p[i].id != -1) {
+        printf("----------------------------------\n");
+        printf("Nomina: %i\n", p[i].id);
+        printf("Fecha: 1/%i/%i\n", p[i].fecha.mes, p[i].fecha.anio);
+        printf("Cantidad de empleados: %i\n", p[i].cantidad_empleados);
+        printf("Porcentaje de carga social: %.2f%\n", p[i].monto_carga_social * 100);
+        printf("\n ~~ Empleados ~~\n");
+
+        double subtotal_salarios = 0;
+        double total_salarios = 0;
+
+        for (int j = 0; j < p[i].cantidad_empleados; j++) {
+            printf("\n\n");
+            printf("Nombre: %s", listaEmpleados[j].nombre_completo);
+            printf("\n");
+            printf("Cedula: %s", listaEmpleados[j].cedula);
+            printf("\n");
+            printf("Sueldo: %.2f", listaEmpleados[j].salario_mensual);
+            printf("\n");
+            printf("Puesto: %s", listaEmpleados[j].nombre_rol);
+
+            subtotal_salarios += listaEmpleados[j].salario_mensual;
+            total_salarios += (listaEmpleados[j].salario_mensual * (p[i].monto_carga_social));
+        }
+
+        printf("\n\nSubtotal de salarios (sin cargas): %.2f\n", subtotal_salarios);
+        printf("Total de salarios (con cargas): %.2f\n\n", total_salarios);
+
+        i++;
+    }
+}
+
+void MostrarTodasLasNominas() {
+    PlanillaConCantEmpleados* planillas = ObtenerPlanillasConCantEmpleados();
+    printf("\n>>> Lista de nominas\n");
+    printf("\n");
+    int i = 0;
+    while (planillas[i].id != -1) {
+        printf(
+            "[%i] Fecha: 1/%i/%i | Carga social: %.2f% | Cantidad de empleados: %i\n",
+            planillas[i].id,
+            planillas[i].fecha.mes,
+            planillas[i].fecha.anio,
+            (planillas[i].monto_carga_social * 100),
+            planillas[i].cantidad_empleados
+        );
+        i++;
+    }
+}
+
+/*****Nombre***************************************
+* Menu_VI01
+*****Descripción**********************************
+* Menu de gestion de valores iniciales
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void Menu_VI01() {
+    system("clear");
+    printf("[MENU DE VALORES INICIALES]\n");
+    printf("1. Ver informacion del negocio\n");
+    printf("2. Modificar el valor de las cargas sociales\n");
+    printf("0. Volver\n");
+    printf(">");
+
+    char opcion_01[BUFFER];
+    scanf("%s",&opcion_01);
+    if (!VerificarNumero(opcion_01)) {
+        printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+        PauseSinTimer(2);
+        Menu_VI01();
+        return;
+    }
+    int opcion_02 = strtol(opcion_01,NULL,10);
+    switch(opcion_02) {
+        case 1:
+            MostrarInformacionDelNegocio();
+            PauseSinTimer(2);
+            break;
+        case 2:
+            CambiarValorDeCargaSocial();
+            break;
+        case 0:
+            Menu_OA1();
+            return;
+        default:
+            printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
+            Pause();
+            break;
+    }
+    Menu_VI01();
+}
+
+/*****Nombre***************************************
+* CambiarValorDeCargaSocial
+*****Descripción**********************************
+* Cambia el valor de las cargas sociales con un
+* valor nuevo digitado por el usuario
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void CambiarValorDeCargaSocial() {
+    system("clear");
+    printf("[CAMBIO DE VALOR DE CARGA SOCIAL]\n");
+    printf(
+        "[!] Valor actual porcentual: %.2f | %.2f%\n",
+        cargoSocial.porcentaje,
+        (cargoSocial.porcentaje * 100)
+    );
+    printf("[!] Ingrese el nuevo valor (porcentual), o presione enter para no cambiarlo: ");
+    getchar();
+
+    char opcion_01[BUFFER];
+    fgets(opcion_01,BUFFER,stdin);
+
+    printf("%s", opcion_01);
+    if (opcion_01[0] == '\n' && opcion_01[1] == '\0') {
+        printf("[!] No se ha cambiado el valor\n");
+        PauseSinTimer(1);
+        return;
+    }
+    if (!VerificarDouble(opcion_01)) {
+        printf("[ERROR] = POR FAVOR DIGITE UN VALOR NUMERICO FLOTANTE!\n");
+        PauseSinTimer(3);
+        CambiarValorDeCargaSocial();
+        return;
+    }
+    double valor = strtod(opcion_01,NULL);
+    if (valor<1 || valor>5) {
+        printf("[ERROR] = POR FAVOR DIGITE UN VALOR ENTRE 1 Y 5!\n");
+        PauseSinTimer(2);
+        CambiarValorDeCargaSocial();
+        return;
+    }
+    cargoSocial.porcentaje = valor;
+    ModificarCargoSocial((char*)"General", valor);
+    printf("[!] Valor cambiado\n");
+    PauseSinTimer(2);
+}
+
+/*****Nombre***************************************
+* MostrarInformacionDelNegocio
+*****Descripción**********************************
+* Muestra la informacion del negocio en pantalla
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void MostrarInformacionDelNegocio() {
+    printf("============[INFORMACION DEL COMERCIO]============\n");
+    printf("Cedula del negocio: %s\n", comercio.cedulaJuridica);
+    printf("Nombre del negocio: %s\n", comercio.nombre);
+    printf("Telefono del negocio: %s\n", comercio.telefono);
+}
+
+/*****Nombre***************************************
+* Menu_RN01
+*****Descripción**********************************
+* Menu de gestion de regitro de nominas
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void Menu_RN01() {
+    system("clear");
+    printf("[REGISTRO DE NOMINAS]\n");
+    
+    char mes_nomina[3];
+    printf("Ingrese el mes de la nomina: ");
+    scanf("%s",&mes_nomina);
+    if (!VerificarNumero(mes_nomina)) {
+        printf("[ERROR] <= DEBE DIGITAR UN NUMERO PARA EL MES DE LA NOMINA!\n");
+        PauseSinTimer(2);
+        Menu_RN01();
+        return;
+    }
+    int mes_nomina_int = strtol(mes_nomina,NULL,10);
+    if (mes_nomina_int<1 || mes_nomina_int>12) {
+        printf("[ERROR] <= DEBE DIGITAR UN NUMERO ENTRE 1 Y 12 PARA EL MES DE LA NOMINA!\n");
+        PauseSinTimer(2);
+        Menu_RN01();
+        return;
+    }
+
+    char anio_nomina[3];
+    printf("Ingrese el anio de la nomina: ");
+    scanf("%s",&anio_nomina);
+    if (!VerificarNumero(anio_nomina)) {
+        printf("[ERROR] <= DEBE DIGITAR UN NUMERO PARA EL ANIO DE LA NOMINA!\n");
+        PauseSinTimer(2);
+        Menu_RN01();
+        return;
+    }
+    int anio_nomina_int = strtol(anio_nomina,NULL,10);
+
+    time_t tiempo;
+    struct tm *tm;
+    time(&tiempo);
+    tm = localtime(&tiempo);
+
+    int anio_actual = tm->tm_year + 1900;
+
+    if (anio_nomina_int<(anio_actual-5) || anio_nomina_int>(anio_actual + 5)) {
+        printf("[ERROR] <= DEBE DIGITAR UN NUMERO VALIDO PARA EL ANIO DE LA NOMINA!\n");
+        printf("(Sin exceder de 5 anios antes y 5 anios despues del anio actual)\n");
+        PauseSinTimer(2);
+        Menu_RN01();
+        return;
+    }
+
+    AgregarEmpleadosANomina(mes_nomina_int, anio_nomina_int);
+}
+
+/*****Nombre***************************************
+* AgregarEmpleadosANomina
+*****Descripción**********************************
+* Agrega los empleados a la nomina, este primer
+* menu es para agregar definir y registrar una
+* nomina para posteriormente poder agregar los
+* empleados a la nomina
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* int mes: mes de la nomina
+* int anio: anio de la nomina
+**************************************************/
+void AgregarEmpleadosANomina(int mes, int anio) {
+    system("clear");
+    printf("[REGISTRO DE NOMINAS]\n");
+    printf("Fecha (mes: %d/ anio: %d)\n", mes, anio);
+    printf("Monto porcentual de cargas sociales: %.2f%\n", cargoSocial.porcentaje * 100);
+    printf("¿Los valores son correctos? (s/n): ");
+    char opcion_01[BUFFER];
+    scanf("%s",opcion_01);
+    if (strcmp(opcion_01,"s") == 0 || strcmp(opcion_01,"S") == 0) {
+        Fecha fecha_planilla = {
+            .dia = 1,
+            .mes = mes,
+            .anio = anio
+        };
+
+        Planilla plan = ObtenerPlanillaPorFecha(fecha_planilla);
+        if (plan.id != -1) {
+            printf("[ERROR] <= UNA PLANILLA YA SE ENCUENTRA REGISTRADA EN ESA FECHA!\n");
+            printf("id planilla: %d\n", plan.id);
+            Fecha f = plan.fecha;
+            printf("fecha: %d/%d/%d\n", f.dia, f.mes, f.anio);
+            PauseSinTimer(2);
+            Menu_RN01();
+            return;
+        }
+
+        plan.fecha = fecha_planilla;
+        
+        // La planilla no existe, se procede a crear.
+        if (RegistrarPlanilla(plan)) {
+            plan = ObtenerPlanillaPorFecha(fecha_planilla);
+            EmpleadoConRol* empleados_elegidos = malloc(cantidadEmpleados * sizeof *empleados_elegidos);
+            MostrarListaDeEmpleados();
+            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cantidadEmpleados);
+            return;
+        }
+        printf("[ERROR] <= NO SE PUDO REGISTRAR LA PLANILLA!\n");
+        PauseSinTimer(2);
+        Menu_RN01();
+        return;
+    }
+    if (strcmp(opcion_01,"n") == 0 || strcmp(opcion_01,"N") == 0) {
+        printf("[!] Se cancelo el registro, volviendo al menu anterior\n");
+        PauseSinTimer(2);
+        Menu_RN01();
+        return;
+    }
+    printf("[ERROR] <= DEBE DIGITAR S O N PARA CONFIRMAR O NO CONFIRMAR LA FECHA!\n");
+    PauseSinTimer(2);
+    Menu_RN01();
+}
+
+/*****Nombre***************************************
+* AgregarEmpleadosANominaAux
+*****Descripción**********************************
+* Una vez que se ha registrado la planilla o nomina,
+* se procede a agregar los empleados a la nomina
+* se les va a mostrar la lista de empleados registrados en
+* el sistema y se le va a pedir que seleccione los empleados
+* que se van a agregar a la nomina. Tambien, podra elegir
+* empleados previamente elegidos para eliminarlos de la nomina.
+* Y finalmente, registrar la nomina o cancelar el registro.
+*
+* El objetivo de esta funcion recursiva es que se puedan
+* ir agregando los empleados en la lista que es pasada por
+* referencia y que esta se pueda imprimir y actualizar a
+* medida que el usuario lo desee
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Planilla plan: planilla a la cual se le van a agregar los empleados
+* EmpleadoConRol* empleados_elegidos: lista de empleados elegidos para la nomina (se va modificando)
+* int cantidad_empleados: cantidad de empleados que quedan por agregar a la nomina (servira para la recursion)
+**************************************************/
+void AgregarEmpleadosANominaAux(Planilla plan, EmpleadoConRol* empleados_elegidos, int cant_empleados_restantes) {
+    system("clear");
+    printf("[REGISTRO DE NOMINAS]\n");
+    printf("[PLANILLA %d/%d]\n", plan.fecha.mes, plan.fecha.anio);
+    printf("TOTAL DE EMPLEADOS: %d\n", cantidadEmpleados);
+    printf("EMPLEADOS RESTANTES: %d\n", cant_empleados_restantes);
+
+    MostrarListaDeEmpleados();
+    printf("\n >>> Empleados elegidos <<<\n");
+    ImprimirListaDeEmpleados(empleados_elegidos, cantidadEmpleados - cant_empleados_restantes);
+    printf("----------------------------------------------------\n");
+    printf("1. Agregar empleado |");
+    printf("2. Eliminar empleado | ");
+    printf("3. Terminar y registrar nomina |");
+    printf("0. Cancelar");
+
+    printf("\n>");
+    char opcion_01[BUFFER];
+    scanf("%s",opcion_01);
+    if (VerificarNumero(opcion_01)) {
+        int opcion_01_int = strtol(opcion_01,NULL,10);
+        if (opcion_01_int == 1) {
+            char cedula_elegida[BUFFER];
+            printf("Ingrese la cedula del empleado: ");
+            scanf("%s",cedula_elegida);
+            if (VerificarCedulaEmpleado(cedula_elegida)) {
+                // Verificar que no haya sido elegida
+                int aux = cantidadEmpleados - cant_empleados_restantes;
+                if (CedulaFueElegida(cedula_elegida, empleados_elegidos, aux)) {
+                    printf("[ERROR] <= LA CEDULA YA FUE ELEGIDA!\n");
+                    PauseSinTimer(2);
+                    AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+                    return;
+                }
+                EmpleadoConRol empleado_elegido = ObtenerEmpleadoConRol(cedula_elegida);
+                if (strcmp(empleado_elegido.cedula,"ND") != 0) {
+                    int aux = cantidadEmpleados - cant_empleados_restantes;
+                    empleados_elegidos[aux] = empleado_elegido;
+                    cant_empleados_restantes--;
+                    AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+                    return;
+                }
+            }
+            printf("[ERROR] <= EL EMPLEADO NO EXISTE!\n");
+            PauseSinTimer(1);
+            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+            return;
+        }
+        if (opcion_01_int == 2) {
+            char cedula_elegida[BUFFER];
+            printf("Ingrese la cedula del empleado: ");
+            scanf("%s",cedula_elegida);
+            if (VerificarCedulaEmpleado(cedula_elegida)) {
+                int aux = cantidadEmpleados - cant_empleados_restantes;
+                if (CedulaFueElegida(cedula_elegida, empleados_elegidos, aux)) {
+                    EliminarEmpleadoDeNomina(cedula_elegida, empleados_elegidos, cantidadEmpleados - cant_empleados_restantes);
+                    cant_empleados_restantes++;
+                    AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+                    return;
+                }
+                printf("[ERROR] <= LA CEDULA NO FUE ELEGIDA!\n");
+                PauseSinTimer(2);
+                AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+            }
+            printf("[ERROR] <= EL EMPLEADO NO EXISTE!\n");
+            PauseSinTimer(2);
+            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+            return;
+        }
+        if (opcion_01_int == 3) {
+            int cant_empleados_elegidos = cantidadEmpleados - cant_empleados_restantes;
+            system("clear");
+            if (cant_empleados_elegidos == 0) {
+                printf("[ERROR] <= NO SE HA ELEGIDO NINGUN EMPLEADO!\n");
+                PauseSinTimer(2);
+                AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+                return;
+            }
+            printf("[REGISTRO DE NOMINAS]\n");
+            printf("[PLANILLA %d/%d]\n", plan.fecha.mes, plan.fecha.anio);
+            printf("CANT. EMPLEADOS ELEGIDOS: %d\n", cant_empleados_elegidos);
+            printf("-------------------------------");
+            printf("\n >>> Empleados elegidos <<<\n");
+            ImprimirListaDeEmpleados(empleados_elegidos, cant_empleados_elegidos);
+            printf("\n-------------------------------");
+            char confirmacion[BUFFER];
+            printf("[!] ¿Esta seguro de que desea registrar la nomina? (s/n): ");
+            printf("\n> ");
+            scanf("%s",confirmacion);
+            if (strcmp(confirmacion, "s") == 0 || strcmp(confirmacion, "S")) {
+                // Registro de empleados en la bdd
+                bool exito = true;
+                for (int i = 0; i < cant_empleados_elegidos; i++) {
+                    if (RegistrarEmpleadoAPlanilla(plan.fecha, empleados_elegidos[i].cedula)) {
+                        continue;
+                    }
+                    exito = false;
+                    break;
+                }
+                if (exito) {
+                    printf(
+                        "\n[EXITO] <= LOS %d EMPLEADOS FUERON REGISTRADOS EN LA NOMINA!\n",
+                        cant_empleados_elegidos
+                    );
+                    PauseSinTimer(2);
+                    system("clear");
+                    return;
+                }
+                printf("[ERROR] <= NO SE PUDO REGISTRAR LA NOMINA CORRECTAMENTE!\n");
+                EliminarPlanillaPorFecha(plan.fecha);
+                PauseSinTimer(2);
+            }
+            AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+            return;
+        }
+        if (opcion_01_int == 0) {
+            printf("[!] Se cancelo el registro, volviendo al menu anterior\n");
+            EliminarPlanillaPorFecha(plan.fecha);
+            PauseSinTimer(2);
+            Menu_OA1();
+            return;
+        }
+        printf("[ERROR] <= DEBE DIGITAR UN NUMERO ENTRE 0 Y 3 PARA ELEGIR UNA OPCION!\n");
+        PauseSinTimer(2);
+        AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
+        return;
+    }
+}
+
+/*****Nombre***************************************
+* EliminarEmpleadoDeNomina
+*****Descripción**********************************
+* Elimina un empleado de la lista de empleados elegidos para la nomina
+* utilizando la cedula del empleado como parametro
+*****Retorno**************************************
+* Sin retorno
+*****Entradas*************************************
+* char* cedula_elegida: cedula del empleado a eliminar
+* EmpleadoConRol* empleados_elegidos: lista de empleados elegidos para la nomina
+* int cant_empleados_restantes: cantidad de empleados restantes para la nomina
+**************************************************/
+void EliminarEmpleadoDeNomina(char* cedula, EmpleadoConRol* empleados_elegidos, int cant_empleados_elegidos) {
+    EmpleadoConRol* nuevos_empleados = malloc(cantidadEmpleados * sizeof *nuevos_empleados);
+    int indice = 0;
+
+    for (int i = 0; i < cant_empleados_elegidos; i++) {
+        if (strcmp(empleados_elegidos[i].cedula,cedula) == 0) {
+            continue;
+        }
+        EmpleadoConRol emp;
+        strcpy(emp.cedula, empleados_elegidos[i].cedula);
+        strcpy(emp.nombre_completo, empleados_elegidos[i].nombre_completo);
+        strcpy(emp.nombre_rol, empleados_elegidos[i].nombre_rol);
+        emp.salario_mensual = empleados_elegidos[i].salario_mensual;
+        nuevos_empleados[indice] = emp;
+        indice++;
+    }
+    empleados_elegidos = nuevos_empleados;
+}
+
+/*****Nombre***************************************
+* CedulaFueElegida
+*****Descripción**********************************
+* Pregunta si la cedula fue elegida para la nomina
+* utilizando la cedula del empleado como parametro
+*****Retorno**************************************
+* Un valor booleano que indica si la cedula fue elegida
+* true: si la cedula fue elegida
+* false: si la cedula no fue elegida
+*****Entradas*************************************
+* char* cedula_elegida: cedula del empleado a verificar
+* EmpleadoConRol* empleados_elegidos: lista de empleados elegidos para la nomina
+**************************************************/
+bool CedulaFueElegida(char* cedula, EmpleadoConRol* empleados_elegidos, int cant_empleados_restantes) {
+    for (int i = 0; i < cant_empleados_restantes; i++) {
+        if (strcmp(empleados_elegidos[i].cedula, cedula) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*****Nombre***************************************
+* VerificarCedulaEmpleado
+*****Descripción**********************************
+* Verifica que la cedula del empleado exista en el sistema
+*****Retorno**************************************
+* Un valor booleano que indica si la cedula existe
+* true: si la cedula existe
+* false: si la cedula no existe
+*****Entradas*************************************
+* char *cedula: cedula del empleado a verificar
+**************************************************/
+bool VerificarCedulaEmpleado(char* cedula_elegida) {
+    for (int i = 0; i < cantidadEmpleados; i++) {
+        if (strcmp(listaEmpleados[i].cedula, cedula_elegida) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*****Nombre***************************************
+* ImprimirListaDeEmpleados
+*****Descripción**********************************
+* Muestra en pantalla a una lista de empleados
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* EmpleadoConRol* empleados_elegidos: lista de empleados
+**************************************************/
+void ImprimirListaDeEmpleados(EmpleadoConRol* empleados_elegidos, int cantidad_empleados) {
+    for (int i = 0; i < cantidad_empleados; i++) {
+        EmpleadoConRol empleado = empleados_elegidos[i];
+        printf(
+            " [%2i] Cedula: %9s\t | Nombre: %30s\t | Rol: %s\t | Salario: %.2f\n",
+            i+1,
+            empleado.cedula,
+            empleado.nombre_completo,
+            empleado.nombre_rol,
+            empleado.salario_mensual
+        );
+    }
+}
+
+/*****Nombre***************************************
+* Menu_RV01
+*****Descripción**********************************
+* Menu de gestion de registro de ventas
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void Menu_RV01() {}
+
+/*****Nombre***************************************
+* Menu_CN
+*****Descripción**********************************
+* Menu de consulta de nominas
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void Menu_CN() {}
+
+/*****Nombre***************************************
+* Menu_CV01
+*****Descripción**********************************
+* Menu de consulta de ventas
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void Menu_CV01() {}
+
+/*****Nombre***************************************
+* Menu_VA01
+*****Descripción**********************************
+* Menu de gestion de balance anual
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void Menu_BA01() {}
+
+
+
 /*****Nombre***************************************
 * VerificarNumero
 *****Descripción**********************************
