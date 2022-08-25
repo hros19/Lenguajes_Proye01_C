@@ -1392,6 +1392,13 @@ void AgregarEmpleadosANomina(int mes, int anio) {
     Menu_RN01();
 }
 
+void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegidos) {
+    printf("cantidad de productos elegidos: %d\n",cant_prod_elegidos);
+    for (int i = 0; i < cant_prod_elegidos; i++) {
+        printf("[%s] - Cantidad: %d\n", lineasFactura[i].id_producto, lineasFactura[i].cantidad);
+    }
+}
+
 /*****Nombre***************************************
 * AgregarEmpleadosANominaAux
 *****Descripción**********************************
