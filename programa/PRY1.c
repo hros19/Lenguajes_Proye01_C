@@ -1734,6 +1734,20 @@ bool ExisteAreaProduccion(int id_area_produccion) {
 }
 
 
+Producto ObtenerProductoExistente(char* xd) {
+    Producto p;
+    for (int i = 0; i < cantidadProductos; i++) {
+        if (strcmp(listaProductos[i].id, xd) == 0) {
+            strcpy(p.id, listaProductos[i].id);
+            strcpy(p.nombre, listaProductos[i].nombre);
+            p.costo = listaProductos[i].costo;
+            p.impuesto = listaProductos[i].impuesto;
+            return p;
+        }
+    }
+}
+
+
 /*****Nombre***************************************
 * ImprimirListaDeEmpleados
 *****Descripción**********************************
