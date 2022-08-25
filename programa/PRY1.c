@@ -167,6 +167,16 @@ int main() {
     return 0;
 }
 
+
+/*****Nombre***************************************
+* CargarFacturasDesdeBdd
+*****Descripción************************************
+* Metodo para cargar facturas desde la base de datos
+*****Retorno****************************************
+* Valor booleano
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 bool CargarFacturasDesdeBdd() {
     Factura* facturasBdd = ObtenerFacturasComercio((char*)"001");
     int cantidadFacturasBdd = ObtenerCantidadFacturas((char*)"001");
@@ -178,6 +188,15 @@ bool CargarFacturasDesdeBdd() {
     return true;
 }
 
+/*****Nombre***************************************
+* CargarPlanillasDesdeBdd
+*****Descripción*************************************
+* Metodo para cargar planillas desde la base de datos
+*****Retorno*****************************************
+* Valor booleano
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 bool CargarPlanillasDesdeBdd() {
     planillas = ObtenerPlanillasConCantEmpleados();
     if (planillas == NULL) {
@@ -186,7 +205,15 @@ bool CargarPlanillasDesdeBdd() {
     return true;
 }
 
-// Se carga la información de las cargas sociales de los empleados
+/*****Nombre***************************************
+* CargarCargasSocialesDesdeBdd
+*****Descripción*******************************************
+* Metodo para cargar cargas sociales desde la base de datos
+*****Retorno***********************************************
+* Valor booleano
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 bool CargarCargasSocialesDesdeBdd() {
     CargoSocial cargo = ObtenerCargoSocial((char*)"General");
     if (cargo.id == 0) {
@@ -196,7 +223,15 @@ bool CargarCargasSocialesDesdeBdd() {
     return true;
 }
 
-// Se cargan de forma inicial los empleados de la bdd
+/*****Nombre***************************************
+* CargarEmpleadosDesdeBdd
+*****Descripción*******************************************
+* Metodo para cargar empleados desde la base de datos
+*****Retorno***********************************************
+* Valor booleano
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 bool CargarEmpleadosDesdeBdd() {
     listaEmpleados = ObtenerEmpleadosConRol();
     cantidadEmpleados = ObtenerCantidadEmpleados();
@@ -206,7 +241,15 @@ bool CargarEmpleadosDesdeBdd() {
     return true;
 }
 
-// Se cargan de forma inicial las areas del negocio de la bdd
+/*****Nombre***************************************
+* CargarAreasDesdeBdd
+*****Descripción**********************************
+* Metodo para cargar areas desde la base de datos
+*****Retorno**************************************
+* Valor booleano
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 bool CargarAreasDesdeBdd() {
     listaAreas = ObtenerAreas();
     cantidadAreas = ObtenerCantidadAreas();
@@ -216,13 +259,29 @@ bool CargarAreasDesdeBdd() {
     return true;
 }
 
-// Se cargan de forma inicial los productos del comercio de la bdd
+/*****Nombre***************************************
+* CargarProductosDesdeBdd
+*****Descripción*************************************
+* Metodo para cargar productos desde la base de datos
+*****Retorno*****************************************
+* Sin retorno
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 void CargarProductosDesdeBdd() {
     listaProductos = ObtenerProductos();
     cantidadProductos = ObtenerCantidadProductos();
 }
 
-// Se carga la informacion inicial del comercio en la bdd
+/*****Nombre***************************************
+* CargarComercioDesdeBdd
+*****Descripción*************************************
+* Metodo para cargar comercio desde la base de datos
+*****Retorno*****************************************
+* Valor booleano
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 bool CargarComercioDesdeBdd() {
     comercio = ObtenerInfoComercio((char*)"001");
     if (comercio.numSigFactura == -1) {
@@ -717,11 +776,11 @@ char* Leer(FILE *archivo,int cont) {
 * Revisar
 *****Descripción************************************************
 * Metodo que revisa el formato del archivo de carga de productos
-*****Retorno***********************************************************************************
+*****Retorno****************************************************
 * Valor booleano
 *****Entradas**********************************************************************************
 * Cadena de caracteres que contiene el contenido del archivo - numero de caracteres del archivo
-**************************************************/
+***********************************************************************************************/
 bool Revisar(char* texto, int cont) {
     int lineas = ContarLineas(texto);
     if (Revisar01_Comas(texto,cont)) {
@@ -889,6 +948,15 @@ void Menu_OA1() {
     }
 }
 
+/*****Nombre***************************************
+* ConsultarFacturasCargadas
+*****Descripción**********************************
+* Menu de consulta de facturas
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 void ConsultarFacturasCargadas() {
     printf("==================[ FACTURAS ]==================\n");
     for (int i = 0; i < cantidadFacturas; i++) {
@@ -928,6 +996,15 @@ void ConsultarFacturasCargadas() {
     }
 }
 
+/*****Nombre***************************************
+* MenuRegistroVentaProducto
+*****Descripción**********************************
+* Menu de registro de venta de productos
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas****************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos
+*****************************************************/
 void MenuRegistroVentaProducto(LineaFactura* lineasFactura, int cant_prod_elegidos) {
     system("clear");
     printf("[REGISTRO DE VENTA DE PRODUCTOS]\n");
@@ -1122,6 +1199,15 @@ void MenuRegistroVentaProducto(LineaFactura* lineasFactura, int cant_prod_elegid
     return;
 }
 
+/*****Nombre***************************************
+* TerminarRegistroDeVenta
+*****Descripción*****************************************
+* Metodo para finalizar proceso del registro de una venta
+*****Retorno*********************************************
+* Sin retorno 
+*****Entradas****************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos
+*****************************************************/
 void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos) {
     system("clear");
     printf("\n----------------------------------------\n");
@@ -1287,6 +1373,15 @@ void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos
     PauseSinTimer(2);
 }
 
+/*****Nombre***************************************
+* RegistrarDetallesFacturaEnBdd
+*****Descripción*******************************************
+* Metodo para registrar los detalles de la factura en la BD
+*****Retorno***********************************************
+* Sin retorno 
+*****Entradas********************************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos, int id_factura
+*********************************************************************/
 void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_elegidos, int id_factura) {
     for (int i = 0; i < cant_prod_elegidos; i++) {
         char id_producto[51];
@@ -1296,6 +1391,15 @@ void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_el
     }
 }
 
+/*****Nombre***************************************
+* ObtenerAreaProduccion
+*****Descripción***************************
+* Metodo para obtener el area de produccion
+*****Retorno*******************************
+* Objeto area
+*****Entradas*************************************
+* int id_area
+**************************************************/
 Area ObtenerAreaProduccion(int id_area) {
     Area area;
     for (int i = 0;i < cantidadAreas;i++) {
@@ -1309,6 +1413,15 @@ Area ObtenerAreaProduccion(int id_area) {
     return area;
 }
 
+/*****Nombre***************************************
+* ExisteAreaProduccion
+*****Descripción***************************
+* Metodo para verificar si existe una area
+*****Retorno*******************************
+* Valor booleano
+*****Entradas*************************************
+* int id_area_produccion
+**************************************************/
 bool ExisteAreaProduccion(int id_area_produccion) {
     for (int i = 0;i < cantidadAreas;i++) {
         if (listaAreas[i].id == id_area_produccion) {
@@ -1318,6 +1431,15 @@ bool ExisteAreaProduccion(int id_area_produccion) {
     return false;
 }
 
+/*****Nombre***************************************
+* StringSoloConLetras
+*****Descripción*********************************************************
+* Metodo para verificar si una cadena de caracteres contiene algun numero
+*****Retorno*************************************************************
+* Valor booleano
+*****Entradas*************************************
+* char* cadena
+**************************************************/
 bool StringSoloConLetras(char* cadena) {
     for (int i = 0;i < strlen(cadena);i++) {
         if (cadena[i] == ' ' || cadena[i] == '\n') {
@@ -1330,6 +1452,15 @@ bool StringSoloConLetras(char* cadena) {
     return true;
 }
 
+/*****Nombre***************************************
+* ObtenerProductoExistente
+*****Descripción***************************************************
+* Metodo para obtener un producto existente en la lista de productos
+*****Retorno*******************************************************
+* Objeto producto
+*****Entradas*************************************
+* char* xd
+**************************************************/
 Producto ObtenerProductoExistente(char* xd) {
     Producto p;
     for (int i = 0; i < cantidadProductos; i++) {
@@ -1343,6 +1474,15 @@ Producto ObtenerProductoExistente(char* xd) {
     }
 }
 
+/*****Nombre***************************************
+* EliminarLineaFactura
+*****Descripción******************************
+* Metodo para eliminar una linea de la factura
+*****Retorno**********************************
+* Objeto lineafactura
+*****Entradas*******************************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos, Producto prod
+********************************************************************/
 LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto prod) {
     LineaFactura* lineasNuevas = malloc((cant_prod_elegidos-1) * sizeof(LineaFactura));
     int i = 0;
@@ -1361,6 +1501,15 @@ LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_el
     return lineasNuevas;
 }
 
+/*****Nombre***************************************
+* ImprimirProductosElegidos
+*****Descripción***************************************
+* Metodo para imprimir productos elegidos en la factura
+*****Retorno*******************************************
+* Sin retorno
+*****Entradas*******************************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos
+********************************************************************/
 void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegidos) {
     printf("cantidad de productos elegidos: %d\n",cant_prod_elegidos);
     for (int i = 0; i < cant_prod_elegidos; i++) {
@@ -1368,6 +1517,15 @@ void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegid
     }
 }
 
+/*****Nombre***************************************
+* ExisteProductoEnLinea
+*****Descripción*******************************************
+* Metodo para verificar si existe un producto en la factura
+*****Retorno************************************************
+* Valor booleano
+*****Entradas***********************************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto
+************************************************************************/
 bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto) {
     for (int i = 0; i < cant_prod_elegidos; i++) {
         if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
@@ -1377,6 +1535,15 @@ bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, 
     return false;
 }
 
+/*****Nombre***************************************
+* AgregarRepetidoLineaFactura
+*****Descripción*******************************************
+* Metodo para sumar mas productos existentes en la factura
+*****Retorno************************************************
+* Sin retorno
+*****Entradas******************************************************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cant_prod_int
+*******************************************************************************************/
 void AgregarRepetidoLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cant_prod_int) {
     for (int i = 0; i < cant_prod_elegidos; i++) {
         if (strcmp(lineasFactura[i].id_producto, producto.id) == 0) {
@@ -1386,6 +1553,15 @@ void AgregarRepetidoLineaFactura(LineaFactura* lineasFactura, int cant_prod_eleg
     }
 }
 
+/*****Nombre***************************************
+* AgregarLineaFactura
+*****Descripción*******************************************
+* Metodo para agregar una linea a la factura
+*****Retorno************************************************
+* Objeto linea factura
+*****Entradas******************************************************************************
+* LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad
+*******************************************************************************************/
 LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_elegidos, Producto producto, int cantidad) {
     LineaFactura* lineasNuevas = malloc((cant_prod_elegidos+1) * sizeof(LineaFactura));
     for (int i = 0; i < cant_prod_elegidos; i++) {
@@ -1399,6 +1575,15 @@ LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_ele
     return lineasNuevas;
 }
 
+/*****Nombre***************************************
+* MenuEliminarNomina
+*****Descripción*******************************************
+* Menu para eliminar nominas
+*****Retorno************************************************
+* Sin retorno
+*****Entradas***********************************************
+* Sin entradas
+************************************************************/
 void MenuEliminarNomina() {
     system("clear");
     printf("[ELIMINAR NOMINA]\n");
@@ -1439,6 +1624,15 @@ void MenuEliminarNomina() {
     }
 }
 
+/*****Nombre***************************************
+* ExisteNomina
+*****Descripción*******************************************
+* Metodo para verificar la existencia de una nomina
+*****Retorno************************************************
+* Valor booleano
+*****Entradas***********************************************
+* int id_nomina
+************************************************************/
 bool ExisteNomina(int id_nomina) {
     int i = 0;
     while (planillas[i].id != -1) {
@@ -1448,6 +1642,15 @@ bool ExisteNomina(int id_nomina) {
     return false;
 }
 
+/*****Nombre***************************************
+* EliminarNomina
+*****Descripción*******************************************
+* Metodo para eliminar una nomina
+*****Retorno************************************************
+* Valor booleano
+*****Entradas***********************************************
+* int id_nomina
+************************************************************/
 bool EliminarNomina(int id_nomina) {
     int i = 0;
     while (planillas[i].id != -1) {
@@ -1463,6 +1666,15 @@ bool EliminarNomina(int id_nomina) {
     return false;
 }
 
+/*****Nombre***************************************
+* MostrarTodasLasNominasConSalarios
+*****Descripción*******************************************
+* Metodo para imprimir las nominas con salarios
+*****Retorno************************************************
+* Sin retorno
+*****Entradas***********************************************
+* Sin entradas
+************************************************************/
 void MostrarTodasLasNominasConSalarios() {
     PlanillaConCantEmpleados* p = ObtenerPlanillasConCantEmpleados();
     if (p == NULL) {
@@ -1504,6 +1716,15 @@ void MostrarTodasLasNominasConSalarios() {
     }
 }
 
+/*****Nombre***************************************
+* MostrarTodasLasNominas
+*****Descripción**********************************
+* Metodo para imprimir todas las nominas
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 void MostrarTodasLasNominas() {
     PlanillaConCantEmpleados* planillas = ObtenerPlanillasConCantEmpleados();
     printf("\n>>> Lista de nominas\n");
@@ -2002,52 +2223,6 @@ void ImprimirListaDeEmpleados(EmpleadoConRol* empleados_elegidos, int cantidad_e
         );
     }
 }
-
-/*****Nombre***************************************
-* Menu_RV01
-*****Descripción**********************************
-* Menu de gestion de registro de ventas
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_RV01() {}
-
-/*****Nombre***************************************
-* Menu_CN
-*****Descripción**********************************
-* Menu de consulta de nominas
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_CN() {}
-
-/*****Nombre***************************************
-* Menu_CV01
-*****Descripción**********************************
-* Menu de consulta de ventas
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_CV01() {}
-
-/*****Nombre***************************************
-* Menu_VA01
-*****Descripción**********************************
-* Menu de gestion de balance anual
-*****Retorno**************************************
-* Sin retorno 
-*****Entradas*************************************
-* Sin entradas
-**************************************************/
-void Menu_BA01() {}
-
-
 
 /*****Nombre***************************************
 * VerificarNumero
