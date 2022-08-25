@@ -1372,6 +1372,18 @@ void EliminarEmpleadoDeNomina(char* cedula, EmpleadoConRol* empleados_elegidos, 
     empleados_elegidos = nuevos_empleados;
 }
 
+bool StringSoloConLetras(char* cadena) {
+    for (int i = 0;i < strlen(cadena);i++) {
+        if (cadena[i] == ' ' || cadena[i] == '\n') {
+            continue;
+        }
+        if (!isalpha(cadena[i]) && cadena[i] != ' ') {
+            return false;
+        }
+    }
+    return true;
+}
+
 /*****Nombre***************************************
 * CedulaFueElegida
 *****Descripción**********************************
