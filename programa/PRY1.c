@@ -2159,6 +2159,112 @@ void EliminarEmpleadoDeNomina(char* cedula, EmpleadoConRol* empleados_elegidos, 
     empleados_elegidos = nuevos_empleados;
 }
 
+
+void Menu_BA01() {
+    /* al ser dos consultas de listas diferentes y de cantidades diferentes presento los datos por planilla y por facturas de forma correspondiente
+
+    Planilla* listaPlanillas;
+    listaPlanillas = ObtenerTotalPlanillas(); no esta el metodo en el dao
+
+    printf("--------- [LISTA DE AÑOS CON PLANILLA REGISTRADA] ---------\n");
+    int cantPlanillas = ObtenerCantidadPlanillas(); no esta el metodo en el dao
+
+    for (int i = 0;i<cantPlanillas;i++) {
+        double cargas = ObtenerTotalNominas(listaPlanilas[i].fecha.anio);
+        printf("\nAÑO = %d\nTOTAL CON CARGAS = %f",cargas,listaPlanillas[i].monto_carga_social);
+    }
+
+    filtrar facturas por año
+    Factura* listaFacturas;
+    int cantFacturas = ObtenerCantidadFacturas(id del comercio);
+    listaFacturas = ObtenerFacturasTotal(); no esta el metodo en el dao
+
+
+    para el balance se necesita el total de la nomina y el subtotal de ventas = ObtenerTotalNomina(Planilla* lista, int cantNominas, int anio);
+
+    printf("--------- [LISTA DE AÑOS CON FACTURAS REGISTRADAS] ---------\n");
+    for (int i = 0;i<cantFacturas;i++) {
+        double subtotal = ObtenerSubtotalVentas(listaFacturas[i].fechaFacturacion.anio);
+        double impuesto = ObtenerImpuestoVentas(listaFacturas[i].fechaFacturacion.anio);
+        double balance = subtotal - ObtenerTotalNomina(listaFacturas[i].fechaFacturacion.anio);
+        printf("AÑO = %d\nSUBTOTAL = %f\nTOTAL DE IMPUESTO = %f\nBALANCE = %f\n",listaFacturas[i].fecha_Facturacion.anio,subtotal,impuesto,balance);
+    }
+    
+    printf("Digite el año por consultar\n>");
+    char anio[BUFFER];
+    scanf("%s",&anio);
+    if (VerificarNumero(anio)) {
+        int anio2 = strtol(anio, NULL, 10)
+        Planilla* resPlanillas = ObtenerPlanillasPorAnio(anio2); no existe el metodo en el dao
+        int cantPlanillasConsultadas = ObtenerCantidadPlanillasPorAnio(anio2); no existe el metodo en el dao
+        printf("\n--------- [DETALLES DE LOS MOVIMIENTOS DEL AÑO %d] ---------\n",anio2);
+        printf("=== [DETALLES DE LAS PLANILLAS] ===\n");
+        for (int i=0;i<cantPlanillasConsultadas;i++) {
+            printf("MES = %d\nCARGAS = %f\n",resPlanillas[i].fecha.mes,resPlanillas[i].monto_carga_social);
+        }
+        Factura* resFacturas = ObtenerFacturasPorAnio(anio2);
+        int cantFacturasConsultadas = ObtenerCantFacturasPorAnio(anio2);
+
+        no se si hay que mostrar el balance porque en este caso no se si en lugar del total de la nomina sea la carga y seria hacer un metodo para obtener la carga por mes
+
+        printf("\n\n=== [DETALLES DE LAS PLANILLAS] ===\n");
+        for (int i=0;i<cantFacturasConsultadas;i++) {
+            printf("MES = %d\nSUBTOTAL = %f\nIMPUESTO = %f",resFacturas[i].fechaFacturacion.mes,resFacturas[i].subtotal,resFacturas[i].impuesto);
+        }
+
+
+    }
+    else {
+        printf("[ERROR] <== INGRESE UN AÑO VALIDO!!\n");
+        PauseSinTimer(1);
+        Menu_BA01();
+    }
+
+    */
+    
+}
+
+
+/*
+double ObtenerSubtotalVentas(int anio) {
+    Factura* listaFacturas = ObtenerFacturasPorAnio(anio);
+    int cantFacturas = ObtenerCantidadFacturasPorAnio(anio);
+    double res = 0;
+    for (int i = 0, i<cantFacturas,i++)
+        res+=listaFacturas[i].subtotal;
+    return res;
+}
+
+double ObtenerImpuestoVentas(int anio) {
+    Factura* listaFacturas = ObtenerFacturasPorAnio(anio);
+    int cantFacturas = ObtenerCantidadFacturasPorAnio(anio);
+    double res = 0;
+    for (int i = 0, i<cantFacturas,i++)
+        res+=listaFacturas[i].impuesto;
+    return res;
+}
+
+
+double ObtenerTotalNomina(int anio) {
+    Planilla* listaPlanillas = ObtenerPlanillasPorAnio(anio);
+    int cantNominas = ObtenerCantidadPlanillasPorAnio(anio);
+    double res = 0;
+    for (int i = 0, i<cantNominas,i++)
+        res+=listaPlanillas[i].monto_carga_social;
+    return res;
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
 /*****Nombre***************************************
 * CedulaFueElegida
 *****Descripción**********************************
