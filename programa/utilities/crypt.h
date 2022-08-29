@@ -2,8 +2,8 @@
 * Nombre del archivo: crypt
 * Tipo de archivo: archivo de encabezado (.h)
 * Proyecto: Sistema de producción agrícola
-* Autor: Dr. Parag Shukla
-* Source: https://www.youtube.com/watch?v=-lexb9VFCPM&ab_channel=Dr.ParagShukla
+* Autor: programmingalgorithms.com
+* source: www.programmingalgorithms.com/algorithm/xor-encryption/c
 * Empresa: Instituto Tecnológico de Costa Rica
 *****Descripción******************************************
 * Archivo para la encriptación de datos.
@@ -12,24 +12,45 @@
 * 15/08/2022
 **********************************************************/
 
+// NOTA: NO FUE DISEÑADA POR ESTUDIANTES, REVISAR ENCABEZADO.
+
 #ifndef CRYPT_H
 #define CRYPT_H
 
 #include <string.h>
 #include <stdio.h>
 
-void Encriptar(const char *clave, char *clave_encriptada) {
+static const char key[] = "hans";
+
+/**
+ * @brief Encripta una cadena de texto.
+ * @param text La cadena de texto a encriptar.
+ * @return La cadena de texto encriptada.
+ */
+char* Encriptar(char* text) {
+    char* encrypted = (char*) malloc(sizeof(char) * (strlen(text) + 1));
     int i;
-    for (i = 0; i < strlen(clave); i++) {
-        clave_encriptada[i] = clave[i] + 0xAED;
+    for (i = 0; i < strlen(text); i++) {
+        encrypted[i] = text[i] ^ key[i % strlen(key)];
     }
+    encrypted[i] = '\0';
+    return encrypted;
 }
 
-void Desencriptar(const char *clave_encriptada, char *clave_desencriptada) {
+/**
+ * @brief Desencripta una cadena de texto.
+ * 
+ * @param text La cadena de texto a desencriptar.
+ * @return char* La cadena de texto desencriptada.
+ */
+char* Desencriptar(char* text) {
+    char* decrypted = (char*) malloc(sizeof(char) * (strlen(text) + 1));
     int i;
-    for (i = 0; i < strlen(clave_encriptada); i++) {
-        clave_desencriptada[i] = clave_encriptada[i] - 0xAED;
+    for (i = 0; i < strlen(text); i++) {
+        decrypted[i] = text[i] ^ key[i % strlen(key)];
     }
+    decrypted[i] = '\0';
+    return decrypted;
 }
 
 #endif // CRYPT_H
