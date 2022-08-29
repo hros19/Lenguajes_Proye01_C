@@ -34,19 +34,24 @@
 bool RegistrarOperadorInicial();
 bool CargarComercioDesdeBdd();
 bool CargarFacturasDesdeBdd();
+bool FacturaExiste(int idFactura);
 void CargarProductosDesdeBdd();
 bool CargarAreasDesdeBdd();
 bool StringSoloConLetras(char* cadena);
 bool CargarEmpleadosDesdeBdd();
 bool CargarProductosDesdeRuta();
+bool NumPerteneceALista(int* lista, int cantidad, int numero);
+void MostrarReporteFacturaAnual(int anio);
 bool CargarPlanillasDesdeBdd();
 bool VerificarCedulaEmpleado(char* cedula_elegida);
 bool CargarCargasSocialesDesdeBdd();
 void CambiarValorDeCargaSocial();
+void MostrarRendimientoDeAreaPorFecha();
+void MostrarReportePlanillaAnual(int anio);
 bool VerificarDouble(char* texto);
 bool CedulaFueElegida(char* cedula, EmpleadoConRol* empleados_elegidos, int cant_empleados_restantes);
 char** SepararLineas(char* texto, char* delimitador);
-
+void MostrarReporteAnualCompleto(int anio);
 void MenuEliminarNomina();
 void MostrarListaDeEmpleados();
 void ImprimirListaDeEmpleados(EmpleadoConRol* empleados_elegidos, int cantidad_empleados);
@@ -56,11 +61,14 @@ void MostrarListaDeAreas();
 void MostrarTodasLasNominasConSalarios();
 void MostrarInformacionDelNegocio();
 void MostrarTodasLasNominas();
+void MostrarNominaEspecifica(int idNomina);
 void ConsultarFacturasCargadas();
 
 void Menu_01();
 void Menu_OP1();
 void Menu_OP2();
+void MostrarTodasLasNominasResumidas();
+void MostrarFacturaEspecifica(int idFactura);
 void Menu_OA1();
 void Menu_VI01();
 void Menu_RN01();
@@ -68,6 +76,8 @@ void Menu_RV01();
 void Menu_CN();
 void Menu_CV01();
 void Menu_BA01();
+
+void MostrarFacturasResumidas();
 void AgregarEmpleadosANomina(int mes, int anio);
 void AgregarEmpleadosANominaAux(Planilla plan, EmpleadoConRol* empleados_elegidos, int cant_empleados_restantes);
 Area ObtenerAreaProduccion(int id_area);
@@ -75,8 +85,12 @@ char* Leer(FILE* archivo, int cont);
 bool Revisar01_Comas(char* texto, int cont);
 int ContarCaracteres(FILE *archivo);
 int ContarLineas(char* texto);
+
+int ObtenerCantidadPlanillasPorMes(PlanillaConCantEmpleados* listaEmpleadosAnual, int cantidadEmpleadosAnual, int mes);
+int* InterseccionListas(int* listaA, int largoA, int* listaB, int largoB);
 bool Revisar(char* texto, int cont);
 bool VerificarNumero(char num[]);
+bool ComasJuntas(char* puntero);
 bool ExisteAreaProduccion(int id_area_produccion);
 bool ExisteNomina(int id_nomina);
 bool EliminarNomina(int id_nomina);
@@ -113,10 +127,16 @@ LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_el
 Producto ObtenerProductoExistente(char* xd);
 void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos);
 void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_elegidos, int id_factura);
+int ObtenerCantidadFacturasPorMes(Factura* listaFacturasAnual, int cantidadFacturasAnual, int mes);
+Factura* ObtenerFacturasDeUnMes(Factura* facturaAnual, int cantidadFacturasDelAnio, int mes);
+void MostrarReportePorMesDeAnio(int anio);
+
 /*****Nombre***************************************
 * main
-*****Descripción**********************************
-* Metodo de inicio del programa
+*****Descripción y objetivo**********************************
+* Metodo de inicio del programa con el objetivo
+* de cargar los datos iniciales del sistema y 
+* mostrar el menu principal.
 *****Retorno**************************************
 * int - Retorna 0 si el programa se ejecuta correctamente.
 *****Entradas*************************************
@@ -124,9 +144,17 @@ void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_el
 **************************************************/
 int main() {
     // Operador - usuario
+    operador.id = 0;
     if (RegistrarOperadorInicial()) {
         return main();
     }
+    if (operador.id == 0) {
+        operador = ObtenerOperador((char*)"admin");
+        if (operador.id == 0) {
+            return main();
+        }
+    }
+
     printf("[OK] Operador cargado desde base de datos\n");
 
     // Comercio - datos del comercio
@@ -170,8 +198,10 @@ int main() {
 
 /*****Nombre***************************************
 * CargarFacturasDesdeBdd
-*****Descripción************************************
+*****Descripción y objetivo************************************
 * Metodo para cargar facturas desde la base de datos
+* en el sistema, para tenerlas listas en las consultas
+* por el usuario.
 *****Retorno****************************************
 * Valor booleano
 *****Entradas*************************************
@@ -190,8 +220,11 @@ bool CargarFacturasDesdeBdd() {
 
 /*****Nombre***************************************
 * CargarPlanillasDesdeBdd
-*****Descripción*************************************
-* Metodo para cargar planillas desde la base de datos
+*****Descripción y objetivo*************************************
+* Metodo para cargar planillas desde la base de datos.
+* Si no encuentra ninguna planilla, no carga ninguna.
+* El objetivo es tener toda la información de las planillas
+* en el sistema para poder mostrarla al usuario.
 *****Retorno*****************************************
 * Valor booleano
 *****Entradas*************************************
@@ -207,8 +240,10 @@ bool CargarPlanillasDesdeBdd() {
 
 /*****Nombre***************************************
 * CargarCargasSocialesDesdeBdd
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Metodo para cargar cargas sociales desde la base de datos
+* en el sistema, con el objetivo de tenerlas listas 
+* en las consultas por el usuario.
 *****Retorno***********************************************
 * Valor booleano
 *****Entradas*************************************
@@ -225,8 +260,10 @@ bool CargarCargasSocialesDesdeBdd() {
 
 /*****Nombre***************************************
 * CargarEmpleadosDesdeBdd
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Metodo para cargar empleados desde la base de datos
+* en el sistema, con el objetivo de tenerlos listos
+* en las consultas por el usuario.
 *****Retorno***********************************************
 * Valor booleano
 *****Entradas*************************************
@@ -243,8 +280,10 @@ bool CargarEmpleadosDesdeBdd() {
 
 /*****Nombre***************************************
 * CargarAreasDesdeBdd
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Metodo para cargar areas desde la base de datos
+* en el sistema, con el objetivo de tenerlas listas
+* en las consultas por el usuario.
 *****Retorno**************************************
 * Valor booleano
 *****Entradas*************************************
@@ -261,8 +300,11 @@ bool CargarAreasDesdeBdd() {
 
 /*****Nombre***************************************
 * CargarProductosDesdeBdd
-*****Descripción*************************************
+*****Descripción y objetivo*************************************
 * Metodo para cargar productos desde la base de datos
+* en el sistema, con el objetivo de tenerlos listos
+* en las consultas por el usuario. Y para actualizar
+* la lista de productos del comercio, en caso de cambios.
 *****Retorno*****************************************
 * Sin retorno
 *****Entradas*************************************
@@ -275,8 +317,10 @@ void CargarProductosDesdeBdd() {
 
 /*****Nombre***************************************
 * CargarComercioDesdeBdd
-*****Descripción*************************************
+*****Descripción y objetivo*************************************
 * Metodo para cargar comercio desde la base de datos
+* en el sistema, con el objetivo de tenerlo listo
+* en las consultas por el usuario y generacion de facturas.
 *****Retorno*****************************************
 * Valor booleano
 *****Entradas*************************************
@@ -292,9 +336,11 @@ bool CargarComercioDesdeBdd() {
 
 /*****Nombre***************************************
 * RegistrarOperadorInicial
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Método que registra un operador inicial en la base de datos.
 * Retornará true si el registro fue exitoso, false en caso contrario.
+* El objetivo es registrar al operador con la clave encriptada
+* en caso de que sea el primer arranque del programa.
 *
 * Nota: El operador inicial se registrará con el nombre "admin" y la
 * contraseña "admin".
@@ -305,8 +351,7 @@ bool CargarComercioDesdeBdd() {
 **************************************************/
 bool RegistrarOperadorInicial() {
     char clave[] = "admin";
-    char clave_encriptada[BUFFER];
-    Encriptar(clave, clave_encriptada);
+    char* clave_encriptada = Encriptar(clave);
 
     Operador op;
     strcpy(op.usuario, "admin");
@@ -318,8 +363,9 @@ bool RegistrarOperadorInicial() {
 
 /*****Nombre***************************************
 * Menu_01
-*****Descripción**********************************
-* Menu principal del programa
+*****Descripción y objetivo**********************************
+* Menu principal del programa que permite al usuario
+* elegir la opción que desea realizar.
 *****Retorno**************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -334,7 +380,7 @@ void Menu_01() {
     scanf("%s",&opcion_01);
     if (!VerificarNumero(opcion_01)) {
         printf("[ERROR] <= POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-        Pause();
+        PauseSinTimer(2);
         Menu_01();
         return;
     }
@@ -350,7 +396,7 @@ void Menu_01() {
             exit(-1);
         default:
             printf("[ERROR] <= POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-            Pause();
+            PauseSinTimer(2);
             break;
     }
     Menu_01();
@@ -358,8 +404,9 @@ void Menu_01() {
 
 /*****Nombre***************************************
 * Menu_OP1
-*****Descripción**********************************
-* Menu de gestion de opciones operativas
+*****Descripción y objetivo**********************************
+* Funcion que despliega el login que debe realizar el usuario
+* para poder acceder a las opciones operativas del programa.
 *****Retorno**************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -367,7 +414,6 @@ void Menu_01() {
 **************************************************/
 void Menu_OP1() {
     system("clear");
-    fflush(stdin);
 
     printf("[MENÚ DE OPCIONES OPERATIVAS]\n");
     
@@ -378,11 +424,8 @@ void Menu_OP1() {
     printf("contrasena:");
     char contrasena[BUFFER];
     scanf("%s",&contrasena);
-    
-    // TODO: Revisar inconsistencia credenciales
 
-    char clave_encriptada[BUFFER];
-    Encriptar(contrasena, clave_encriptada);
+    char* clave_encriptada = Encriptar((char*)contrasena);
 
     strcpy(operador.usuario, nombreUsuario);
     strcpy(operador.clave, clave_encriptada);
@@ -390,16 +433,22 @@ void Menu_OP1() {
     if (ValidarOperador(operador)) {
         Menu_OP2();
     } else {
-        printf("\n[ERROR] Usuario o contrasena incorrectos\n");
-        Pause();
+        printf("[ERROR] <= USUARIO O CONTRASEÑA INCORRECTOS!\n");
+        PauseSinTimer(2);
         Menu_01();
     }
 }
 
 /*****Nombre***************************************
 * Menu_OP2
-*****Descripción********************************************************
-* Menu de ingreso de la ubicacion del archivo para la carga de productos
+*****Descripción y objetivo********************************************************
+* Menu de gestion de opciones operativas del programa.
+* El usuario podrá elegir entre las siguientes opciones:
+* 1. Cargar productos
+* 2. Listar áreas
+* 3. Listar empleados
+* 4. Listar productos
+* 5. Volver
 *****Retorno************************************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -422,7 +471,7 @@ void Menu_OP2() {
     scanf("%s",&input);
     if (!VerificarNumero(input)) {
         printf("[ERROR] <= POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-        Pause();
+        PauseSinTimer(2);
         Menu_OP2();
         return;
     }
@@ -452,7 +501,7 @@ void Menu_OP2() {
                 }
                 else {
                     printf("[!] Se cancelo la carga de productos\n");
-                    Pause();
+                    PauseSinTimer(2);
                     Menu_OP2();
                     return;
                 }
@@ -474,7 +523,7 @@ void Menu_OP2() {
         case 4:
             if (cantidadProductos == 0) {
                 printf("[!] No hay PRODUCTOS!\n");
-                    Pause();
+                    PauseSinTimer(2);
                     Menu_OP2();
                     return;
             }
@@ -483,7 +532,7 @@ void Menu_OP2() {
             break;
         default:
             printf("[ERROR] <= POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-            Pause();
+            PauseSinTimer(2);
             break;
     }
     Menu_OP2();
@@ -491,8 +540,8 @@ void Menu_OP2() {
 
 /*****Nombre***************************************
 * MostrarListaDeEmpleados
-*****Descripción**********************************
-* Muestra la lista de empleados
+*****Descripción y objetivo**********************************
+* Muestra la lista de empleados registrados en el sistema.
 *****Retorno**************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -513,8 +562,8 @@ void MostrarListaDeEmpleados() {
 
 /*****Nombre***************************************
 * MostrarListaDeProductos
-*****Descripción**********************************
-* Muestra toda la lista de productos en pantalla
+*****Descripción y objetivo**********************************
+* Muestra toda la lista de areas en pantalla
 *****Retorno**************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -535,8 +584,8 @@ void MostrarListaDeAreas() {
 
 /*****Nombre***************************************
 * MostrarListaDeProductos
-*****Descripción**********************************
-* Muestra la lista de productos
+*****Descripción y objetivo**********************************
+* Muestra la lista de productos registrados en el sistema.
 *****Retorno**************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -557,9 +606,11 @@ void MostrarListaDeProductos() {
 
 /*****Nombre***************************************
 * CargarProductosDesdeRuta
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Permite la carga de productos desde un archivo de texto
-* en la ruta especificada por el usuario
+* en la ruta especificada por el usuario. Tiene como objetivo
+* pedir, validar y cargar la información de los productos desde
+* un archivo de texto.
 *****Retorno**************************************
 * bool - true si se cargaron los productos correctamente, false si no
 *****Entradas*************************************
@@ -567,21 +618,21 @@ void MostrarListaDeProductos() {
 **************************************************/
 bool CargarProductosDesdeRuta() {
     printf("\nIngrese la ruta de ubicacion del archivo de productos\n");
-    printf("Presione ENTER para cancelar y volver al menu anterior\n");
+    printf("Digite (*) sin parentesis para cancelar y volver al menu anterior\n");
     printf(">");
     char ubicacion[BUFFER];
     fflush(stdin);
     scanf("%s",&ubicacion);
     
     // El usuario presiono ENTER
-    if (strlen(ubicacion) == 0) {
+    if (strlen(ubicacion) == 0 || ubicacion[0] == '*') {
         return true;
     }
 
     FILE* ubicacionA = fopen(ubicacion,"r");
     if (!ubicacionA) {
         printf("\n[ERROR] <= EL ARCHIVO NO EXISTE O SE PRODUJO UN ERROR AL INTENTAR ABRIRLO!!\n");
-        Pause();
+        PauseSinTimer(2);
         return false;
     }
     else {
@@ -595,7 +646,7 @@ bool CargarProductosDesdeRuta() {
 
             if (cantLineas > 100) {
                 printf("\n[ERROR] <= EL ARCHIVO CONTIENE MAS DE 100 LINEAS!!\n");
-                Pause();
+                PauseSinTimer(2);
                 return false;
             }
             else {
@@ -603,7 +654,13 @@ bool CargarProductosDesdeRuta() {
 
                 Producto* productos = malloc(sizeof(Producto)*cantLineas);
                 for (int i = 0; i < cantLineas; i++) {
-                    printf("Linea: %s\n",lineas[i]);
+                    char copia_linea[BUFFER];
+                    strcpy(copia_linea, lineas[i]);
+                    if (ComasJuntas(copia_linea)) {
+                        printf("\n[ERROR] <= NO DEBEN HABER ESPACIOS VACIOS!!\n");
+                        PauseSinTimer(2);
+                        return false;
+                    }
                     char** campos = SepararLineas(lineas[i], (char*)",");
 
                     // Verificar cada uno de los campos
@@ -611,14 +668,14 @@ bool CargarProductosDesdeRuta() {
                     // Verificando el id
                     if (strlen(campos[0]) > 50) {
                         printf("\n[ERROR] <= EL CODIGO DEL PRODUCTO TIENE MAS DE 50 CARACTERES!!\n");
-                        Pause();
+                        PauseSinTimer(2);
                         return false;
                     }
 
                     // Verificando el nombre
                     if (strlen(campos[1]) > 50) {
                         printf("\n[ERROR] <= EL NOMBRE DEL PRODUCTO TIENE MAS DE 50 CARACTERES!!\n");
-                        Pause();
+                        PauseSinTimer(2);
                         return false;
                     }
 
@@ -626,19 +683,56 @@ bool CargarProductosDesdeRuta() {
                     if (!VerificarDouble(campos[2])) {
                         printf("%s\n",campos[2]);
                         printf("\n[ERROR] <= EL COSTO DEL PRODUCTO NO ES UN NUMERO VALIDO!!\n");
-                        Pause();
+                        PauseSinTimer(2);
                         return false;
                     }
 
                     // Verificando el impuesto (double)
                     if (!VerificarDouble(campos[3])) {
                         printf("\n[ERROR] <= EL IMPUESTO DEL PRODUCTO NO ES UN NUMERO VALIDO!!\n");
-                        Pause();
+                        PauseSinTimer(2);
+                        return false;
+                    }
+
+                    // Mostrar que haya campos validos
+                    if (strlen(campos[0])  < 2 || strlen(campos[0]) > 15) {
+                        printf("\n[ERROR] <= LA LINEA NO ES VALIDA (2 - 15) CARACTERES PERMITIDOS!\n");
+                        PauseSinTimer(2);
+                        return false;
+                    }
+      
+                    if (strlen(campos[1])  < 2 || strlen(campos[1]) > 15) {
+                        printf("\n[ERROR] <= LA LINEA NO ES VALIDA (2 - 15) CARACTERES PERMITIDOS!\n");
+                        PauseSinTimer(2);
+                        return false;
+                    }
+
+                    if (strlen(campos[2])  < 2 || strlen(campos[2]) > 15) {
+                        printf("\n[ERROR] <= LA LINEA NO ES VALIDA (2 - 15) CARACTERES PERMITIDOS!\n");
+                        PauseSinTimer(2);
+                        return false;
+                    }
+
+                    if (strlen(campos[3])  < 2 || strlen(campos[3]) > 15) {
+                        printf("\n[ERROR] <= LA LINEA NO ES VALIDA (2 - 15) CARACTERES PERMITIDOS!\n");
+                        PauseSinTimer(2);
                         return false;
                     }
 
                     double costo_producto = strtod(campos[2], NULL);
                     double impuesto_producto = strtod(campos[3], NULL);
+
+                    if (costo_producto <= 0 || impuesto_producto <= 0) {
+                        printf("\n[ERROR] <= EL COSTO O IMPUESTO NO ES VALIDO, SOLO VALORES POSITIVOS\n");
+                        PauseSinTimer(2);
+                        return false;
+                    }
+
+                    if (impuesto_producto >= 100) {
+                        printf("\n[ERROR] <= EL IMPUESTO NO ES VALIDO (TIENE QUE SER MENOR QUE 100)!\n");
+                        PauseSinTimer(2);
+                        return false;
+                    }
 
                     Producto producto;
                     strcpy(producto.id, campos[0]);
@@ -663,7 +757,7 @@ bool CargarProductosDesdeRuta() {
         }   
         else {
             printf("\n[ERROR] <= EL ARCHIVO NO CUENTA CON EL FORMATO NECESARIO PARA LA CARGA DE PRODUCTOS!!\n\n");
-            Pause();
+            PauseSinTimer(2);
             return false;
         }
 
@@ -672,7 +766,7 @@ bool CargarProductosDesdeRuta() {
 
 /*****Nombre***************************************
 * VerificarDouble
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Verifica que el string pasado por parametro sea un double
 *****Retorno**************************************
 * True si es un double, false si no 
@@ -706,11 +800,26 @@ bool VerificarDouble(char* texto) {
     return true;
 }
 
+bool ComasJuntas(char* puntero) {
+    while (*puntero != '\0' || *puntero != '\n' || *puntero != '\r' || *puntero != 0 || *puntero != EOF) {
+        if (*puntero == ',') {
+            if ((*puntero)++ == ',') {
+                return true;
+            } 
+        }
+        if (*puntero == '\0' || *puntero == '\n') { return false; }
+        (*puntero)++;
+    }
+    return false;
+} 
+
 /*****Nombre***************************************
 * SepararLineas
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Separa un string en lineas de acuerdo a un delimitador
-* y devuelve un array de strings con cada una de las lineas
+* y devuelve un array de strings con cada una de las lineas.
+* Como objetivo de separar la información de los productos
+* del archivo de texto.
 *****Retorno**************************************
 * char** - Array de strings con cada una de las lineas
 *****Entradas*************************************
@@ -731,8 +840,10 @@ char** SepararLineas(char* texto, char* delimitador) {
 
 /*****Nombre***************************************
 * ContarCaracteres
-*****Descripción**********************************
-* Cuenta la cantidad de caracteres de un archivo
+*****Descripción y objetivo**********************************
+* Cuenta la cantidad de caracteres de un archivo, con el fin
+* de saber cuantos caracteres hay en el archivo y poder
+* procesarlo y validarlo.
 *****Retorno**************************************
 * int - Cantidad de caracteres
 *****Entradas*************************************
@@ -751,8 +862,9 @@ int ContarCaracteres(FILE *archivo) {
 
 /*****Nombre***************************************
 * Leer
-*****Descripción**********************************
-* Metodo que lee un archivo
+*****Descripción y objetivo**********************************
+* Metodo que lee un archivo y lo guarda en un string., con el fin
+* de poder procesarlo y validarlo.
 *****Retorno************************************************
 * Cadena de caracteres que contiene el contenido del archivo
 *****Entradas***********************************************
@@ -774,8 +886,9 @@ char* Leer(FILE *archivo,int cont) {
 
 /*****Nombre***************************************
 * Revisar
-*****Descripción************************************************
+*****Descripción y objetivo************************************************
 * Metodo que revisa el formato del archivo de carga de productos
+* para verificar que cumpla con el formato necesario.
 *****Retorno****************************************************
 * Valor booleano
 *****Entradas**********************************************************************************
@@ -823,8 +936,9 @@ bool Revisar(char* texto, int cont) {
 
 /*****Nombre***************************************
 * Revisar01_Comas
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Revisa que el archivo tenga una cantidad de comas suficiente
+* para poder separarlo en lineas.
 *****Retorno**************************************
 * bool - True si es correcto, false si no
 *****Entradas*************************************
@@ -845,8 +959,9 @@ bool Revisar01_Comas(char* texto, int cont) {
 
 /*****Nombre***************************************
 * ContarLineas
-*****Descripción**********************************
-* Revisa que el texto tenga una cantidad de lineas suficiente
+*****Descripción y objetivo**********************************
+* Cuenta todas las lineas de un archivo de texto. Para poder
+* separarlo en lineas.
 *****Retorno**************************************
 * int - Cantidad de lineas del texto
 *****Entradas*************************************
@@ -864,8 +979,8 @@ int ContarLineas(char* texto) {
 
 /*****Nombre***************************************
 * Menu_OA1
-*****Descripción**********************************
-* Menu de gestion de opciones administrativas
+*****Descripción y objetivo**********************************
+* Menu de gestion de opciones administrativas.
 *****Retorno**************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -875,7 +990,7 @@ void Menu_OA1() {
     system("clear");
     fflush(stdin);
     printf("[MENU DE OPCIONES ADMINISTRATIVAS]\n");
-    printf("1.Valores iniciales\n2.Registro de nomina\n3.Eliminar nomina\n4.Registro de venta de productos\n5.Consulta de nominas\n6.Consulta de ventas\n7.Balance anual\n0.Volver\n>");
+    printf("1.Valores iniciales\n2.Registro de nomina\n3.Eliminar nomina\n4.Registro de venta de productos\n5.Consulta de nominas\n6.Consulta de ventas\n7.Balance anual\n8.Rendimiento de area por mes y anio\n0.Volver\n>");
     char opcion_01[BUFFER];
     scanf("%s",&opcion_01);
     if (!VerificarNumero(opcion_01)) {
@@ -914,6 +1029,7 @@ void Menu_OA1() {
             MenuRegistroVentaProducto(lineasFactura, 0);
             break;
         case 5:
+            CargarPlanillasDesdeBdd();
             planillas = ObtenerPlanillasConCantEmpleados();
             if (planillas == NULL) {
                 printf("[ERROR] = NO HAY NOMINAS REGISTRADAS!\n");
@@ -921,36 +1037,357 @@ void Menu_OA1() {
                 Menu_OA1();
                 return;
             }
-            MostrarTodasLasNominasConSalarios();
+            MostrarTodasLasNominasResumidas();
             PauseSinTimer(2);
             break;
         case 6:
+            CargarFacturasDesdeBdd();
             if (cantidadFacturas == 0) {
                 printf("[ERROR] = NO HAY FACTURAS REGISTRADAS!\n");
                 PauseSinTimer(2);
                 Menu_OA1();
                 return;
             }
-            ConsultarFacturasCargadas();
+            MostrarFacturasResumidas();
             PauseSinTimer(2);
             break;
         case 7:
             Menu_BA01();
+            break;
+        case 8:
+            CargarFacturasDesdeBdd();
+            if (cantidadFacturas == 0) {
+                printf("[ERROR] = NO HAY FACTURAS REGISTRADAS!\n");
+                PauseSinTimer(2);
+                Menu_OA1();
+                return;
+            }
+            MostrarRendimientoDeAreaPorFecha();
             break;
         case 0:
             Menu_01();
             break;
         default:
             printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-            Pause();
+            PauseSinTimer(2);
             Menu_OA1();
             break;
     }
 }
 
 /*****Nombre***************************************
+* MostrarRenderimientoDeAreaPorFecha
+*****Descripción y objetivo**********************************
+* Solicita una fecha (mes y anio) para mostrar el
+* reporte de rendimiento por cada área de dicha fecha.
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void MostrarRendimientoDeAreaPorFecha() {
+    system("clear");
+    printf("\n=========================[ Consulta de rendimiento de area por mes-anio ]=========================");
+    printf("\n[i] Por favor ingrese una fecha [i]");
+    
+    Fecha fec;
+
+    int mes = 0;
+    printf("\n[i] Ingrese el mes (1 - 12) [i]\n");
+    printf("> ");
+    char opcion_mes[BUFFER];
+    scanf("%s",&opcion_mes);
+    if (!VerificarNumero(opcion_mes)) {
+        printf("[ERROR] = POR FAVOR DIGITE UN MES VALIDO!\n");
+        PauseSinTimer(2);
+        MostrarRendimientoDeAreaPorFecha();
+        return;
+    }
+    mes = strtol(opcion_mes,NULL,10);
+    if (mes < 1 || mes > 12) {
+        printf("[ERROR] = POR FAVOR DIGITE UN MES VALIDO!\n");
+        PauseSinTimer(2);
+        MostrarRendimientoDeAreaPorFecha();
+        return;
+    }
+
+    int anio = 0;
+    printf("\n[i] Ingrese el anio (YYYY) [i]\n");
+    printf("> ");
+    char opcion_anio[BUFFER];
+    scanf("%s",&opcion_anio);
+    if (!VerificarNumero(opcion_anio)) {
+        printf("[ERROR] = POR FAVOR DIGITE UN ANIO VALIDO!\n");
+        PauseSinTimer(2);
+        MostrarRendimientoDeAreaPorFecha();
+        return;
+    }
+    anio = strtol(opcion_anio,NULL,10);
+    if (anio < 0) {
+        printf("[ERROR] = POR FAVOR DIGITE UN ANIO VALIDO!\n");
+        PauseSinTimer(2);
+        MostrarRendimientoDeAreaPorFecha();
+        return;
+    }
+
+    fec.mes = mes;
+    fec.anio = anio;
+
+    int indice = 0;
+    RendimientoArea* rendimientosPorArea = ObtenerRendimientoPorAreas(mes, anio);
+
+    system("clear");
+    printf("\n====================[RENDIMIENTOS DEL MES %i DEL AÑO %i]====================\n",mes,anio);
+    while (rendimientosPorArea[indice].subtotal_ventas != -1) {
+        printf("\n[i] Area: %s [i]\n",rendimientosPorArea[indice].nombre_area);
+        printf("[i] Subtotal de ventas: %.2f [i]\n",rendimientosPorArea[indice].subtotal_ventas);
+        indice++;
+    }
+    printf("================================================================================\n");
+    PauseSinTimer(2);
+    free(rendimientosPorArea);
+}
+
+/*****Nombre***************************************
+* MostrarFacturasResumidas
+*****Descripción y objetivo**********************************
+* Muestra las facturas resumidas y permite seleccionar una para ver su detalle
+* o volver al menu anterior. Tiene como objetivo
+* mostrar las facturas resumidas de las facturas registradas.
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
+void MostrarFacturasResumidas() {
+    system("clear");
+    printf("==================[ Resumen de facturas ] ==================\n");
+    for (int i = 0; i < cantidadFacturas; i++) {
+        printf("Id de la factura: %i", facturas[i].id_factura);
+        printf("\nNombre del comercio: %s", facturas[i].nombre_comercio);
+        printf("\nCedula del comercio: %s", facturas[i].cedula_comercio);
+        printf("\nTelefono del comercio: %s", facturas[i].telefono_comercio);
+        printf("\nNombre del cliente: %s", facturas[i].nombre_cliente);
+        printf("\nFecha de la factura: %i-%i-%i", facturas[i].fecha_facturacion.dia, facturas[i].fecha_facturacion.mes, facturas[i].fecha_facturacion.anio);
+        printf("\nNombre del area de produccion: %s", facturas[i].nombre_area);
+
+        printf("\n");
+        printf("Subtotal de factura: %10.2f\n", facturas[i].subtotal);
+        printf("IVA de factura: %10.2f\n", facturas[i].impuesto);
+        printf("Total de factura: %10.2f\n", facturas[i].total);
+        printf("**********************************************************\n");
+    }
+    printf("[ i ] Elija el numero de la factura que desea consultar\n>");
+    printf(" (O digite una letra para volver al menu anterior)\n>");
+    char opcion_01[BUFFER];
+    scanf("%s",&opcion_01);
+    if (!VerificarNumero(opcion_01)) {
+        printf("[ !! ] Volviendo al menu anterior!\n");
+        PauseSinTimer(2);
+        Menu_OA1();
+        return;
+    }
+    int idFacturaElegida = strtol(opcion_01,NULL,10);
+    if (FacturaExiste(idFacturaElegida)) {
+        MostrarFacturaEspecifica(idFacturaElegida);
+    } else {
+        printf("[ !! ] La factura no existe!\n");
+        PauseSinTimer(2);
+        MostrarFacturasResumidas();
+        return;
+    }
+}
+
+/*****Nombre***************************************
+* MostrarFacturaEspecifica
+*****Descripción y objetivo**********************************
+* Muestra la factura seleccionada por el usuario
+* y permite volver al menu anterior.
+*****Retorno**************************************
+* Sin retorno
+*****Entradas*************************************
+* idFacturaElegida - id de la factura a mostrar
+**************************************************/
+void MostrarFacturaEspecifica(int idFacturaElegida) {
+    system("clear");
+    
+    for (int i = 0; i < cantidadFacturas; i++) {
+        if (facturas[i].id_factura == idFacturaElegida) {
+            printf("==================[ Informacion de factura %i ] ==================\n", idFacturaElegida);
+            printf("Id de la factura: %i", facturas[i].id_factura);
+            printf("\nNombre del comercio: %s", facturas[i].nombre_comercio);
+            printf("\nCedula del comercio: %s", facturas[i].cedula_comercio);
+            printf("\nTelefono del comercio: %s", facturas[i].telefono_comercio);
+            printf("\nNombre del cliente: %s", facturas[i].nombre_cliente);
+            printf("\nFecha de la factura: %i-%i-%i", facturas[i].fecha_facturacion.dia, facturas[i].fecha_facturacion.mes, facturas[i].fecha_facturacion.anio);
+            printf("\nNombre del area de produccion: %s", facturas[i].nombre_area);
+            printf("\n\n");
+            
+            DetalleFactura* detalleFactura = ObtenerDetallesFactura(facturas[i].id_factura);
+            int cantidad_detalles = ObtenerCantidadDeDetalles(facturas[i].id_factura);
+
+            printf("~~~~~~~~~~~~~~[ LINEAS DE FACTURA ]~~~~~~~~~~~~~\n");
+            for (int j = 0; j < cantidad_detalles; j++) {
+                Producto p = detalleFactura[j].producto;
+                printf(
+                    "[%2i] %15s | Cantidad: %8i | Costo: %10.2f | IVA(%2.2f%): %10.2f |  Total: %10.2f\n", 
+                    j,
+                    p.nombre,
+                    detalleFactura[j].cantidad,
+                    (p.costo * detalleFactura[j].cantidad),
+                    (p.impuesto),
+                    (p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100),
+                    (p.costo * detalleFactura[j].cantidad) + ((p.costo * detalleFactura[j].cantidad) * (p.impuesto / 100))
+                );
+                printf("-------------------------------------------------------------------------------------------\n");
+            }
+            printf("\n");
+            printf("Subtotal de factura: %10.2f\n", facturas[i].subtotal);
+            printf("IVA de factura: %10.2f\n", facturas[i].impuesto);
+            printf("Total de factura: %10.2f\n", facturas[i].total);
+            printf("**********************************************************\n");
+            printf("**********************************************************\n");
+        }
+    }
+}
+
+/*****Nombre***************************************
+* FacturaExiste
+*****Descripción y objetivo**********************************
+* Pregunta si una factura existe en el sistema.
+* Con el objetivo de evitar errores de en las consultas.
+*****Retorno**************************************
+* True - Si la factura existe
+* False - Si la factura no existe
+*****Entradas*************************************
+* idFactura - Id de la factura a consultar
+**************************************************/
+bool FacturaExiste(int idFactura) {
+    CargarFacturasDesdeBdd();
+    for (int i = 0; i < cantidadFacturas; i++) {
+        if (facturas[i].id_factura == idFactura) return true;
+    }
+    return false;
+}
+
+/*****Nombre***************************************
+* MostrarTodasLasNominasResumidas
+*****Descripción y objetivo*******************************************
+* Muestra todas las nominas resumidas en pantalla al usuario
+* con una opcion que se le da para desplegar la informacion
+* de una nomina en especifico.
+*****Retorno************************************************
+* No retorna
+*****Entradas***********************************************
+* No hay parametros
+************************************************************/
+void MostrarTodasLasNominasResumidas() {
+    system("clear");
+    PlanillaConCantEmpleados* p = ObtenerPlanillasConCantEmpleados();
+    if (p == NULL) {
+        printf("[ERROR] = NO HAY NOMINAS REGISTRADAS!\n");
+        PauseSinTimer(2);
+        return;
+    }
+    int i = 0;
+    printf("\n=========================[ Lista de nominas ]================================\n");
+    while (p[i].id != -1) {
+        printf("----------------------------------\n");
+        printf("Num. de nomina: %i\n", p[i].id);
+        printf("Fecha: 1/%i/%i\n", p[i].fecha.mes, p[i].fecha.anio);
+        printf("Cantidad de empleados: %i\n", p[i].cantidad_empleados);
+        printf("Porcentaje de carga social: %.2f%\n", p[i].monto_carga_social * 100);
+        double subtotal_salarios = 0;
+        double total_salarios = 0;
+
+        for (int j = 0; j < p[i].cantidad_empleados; j++) {
+            subtotal_salarios += listaEmpleados[j].salario_mensual;
+            total_salarios += (listaEmpleados[j].salario_mensual * (p[i].monto_carga_social));
+        }
+
+        printf("Subtotal de salarios (sin cargas): %.2f\n", subtotal_salarios);
+        printf("Total de salarios (con cargas): %.2f\n\n", total_salarios);
+
+        i++;
+    }
+    printf("============================================================\n");
+    printf("[ i ] Digite el numero de la nomina a ver detalles: ");
+    printf("\n(O digite una letra para volver al menu anterior)");
+    printf("\n>");
+    char opcion_01[BUFFER];
+    scanf("%s",&opcion_01);
+    if (!VerificarNumero(opcion_01)) {
+        printf("[ !!! ] Volviendo al menu anterior!\n");
+        PauseSinTimer(2);
+        Menu_OA1();
+        return;
+    }
+    int opcion_02 = strtol(opcion_01,NULL,10);
+    if (ExisteNomina(opcion_02)) {
+        MostrarNominaEspecifica(opcion_02);
+    }
+    else {
+        printf("[ !!! ] No existe una nomina con el numero (%i)!\n", opcion_02);
+        PauseSinTimer(2);
+        MostrarTodasLasNominasResumidas();
+    }
+
+}
+
+/*****Nombre***************************************
+* MostrarNominaEspecifica
+*****Descripción y objetivo*******************************************
+* Metodo que recibe el id de una nomina para mostrar
+* su info en pantalla
+*****Retorno************************************************
+* No tiene retorno
+*****Entradas***********************************************
+* int idNomina
+************************************************************/
+void MostrarNominaEspecifica(int idNomina) {
+    system("clear");
+    PlanillaConCantEmpleados* p = ObtenerPlanillasConCantEmpleados();
+    if (p == NULL) {
+        printf("[ERROR] = NO HAY NOMINAS REGISTRADAS!\n");
+        PauseSinTimer(2);
+        return;
+    }
+    int i = 0;
+
+    while (p[i].id != -1) {
+        if (p[i].id == idNomina) {
+            printf("\n=========================[ NOMINA %i ]================================\n", p[i].id);
+            printf("----------------------------------\n");
+            printf("Fecha: 1/%i/%i\n", p[i].fecha.mes, p[i].fecha.anio);
+            printf("Cantidad de empleados: %i\n", p[i].cantidad_empleados);
+            printf("Porcentaje de carga social: %.2f%\n", p[i].monto_carga_social * 100);
+            double subtotal_salarios = 0;
+            double total_salarios = 0;
+            printf("~~~~~~~~~~~~~~~~~~~ Lista de empleados ~~~~~~~~~~~~~~~~~~~\n");
+            for (int j = 0; j < p[i].cantidad_empleados; j++) {
+                printf("\n\n");
+                printf("Nombre: %s", listaEmpleados[j].nombre_completo);
+                printf("\n");
+                printf("Cedula: %s", listaEmpleados[j].cedula);
+                printf("\n");
+                printf("Sueldo: %.2f", listaEmpleados[j].salario_mensual);
+                printf("\n");
+                printf("Puesto: %s", listaEmpleados[j].nombre_rol);
+                printf("\n----------------------------------\n");
+                subtotal_salarios += listaEmpleados[j].salario_mensual;
+                total_salarios += (listaEmpleados[j].salario_mensual * (p[i].monto_carga_social));
+            }
+            printf("Subtotal de salarios (sin cargas): %.2f\n", subtotal_salarios);
+            printf("Total de salarios (con cargas): %.2f\n\n", total_salarios);
+            return;
+        }
+        i++;
+    }
+}
+
+/*****Nombre***************************************
 * ConsultarFacturasCargadas
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Menu de consulta de facturas
 *****Retorno**************************************
 * Sin retorno 
@@ -998,7 +1435,7 @@ void ConsultarFacturasCargadas() {
 
 /*****Nombre***************************************
 * MenuRegistroVentaProducto
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Menu de registro de venta de productos
 *****Retorno**************************************
 * Sin retorno 
@@ -1201,8 +1638,9 @@ void MenuRegistroVentaProducto(LineaFactura* lineasFactura, int cant_prod_elegid
 
 /*****Nombre***************************************
 * TerminarRegistroDeVenta
-*****Descripción*****************************************
-* Metodo para finalizar proceso del registro de una venta
+*****Descripción y objetivo*****************************************
+* Metodo para finalizar proceso del registro de una venta.
+* Tiene como objetivo finalizar el proceso de registro de una venta.
 *****Retorno*********************************************
 * Sin retorno 
 *****Entradas****************************************
@@ -1266,8 +1704,18 @@ void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos
     printf("\n");
     MostrarListaDeAreas();
 
+    char id_digitado[BUFFER];
     printf("\n[!] Digite el id del area de produccion: ");
-    scanf("%d",&id_area_produccion);
+    scanf("%s", &id_digitado);
+    if (!VerificarNumero(id_digitado)) {
+        printf("[ERROR] = POR FAVOR DIGITE UN NUMERO\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+
+    id_area_produccion = strtol(id_digitado,NULL,10);
+
     if (id_area_produccion == 0) {
         printf("[ERROR] = POR FAVOR DIGITE UN ID VALIDO\n");
         PauseSinTimer(2);
@@ -1287,12 +1735,29 @@ void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos
     int mes_factura = 0;
     int anio_factura = 0;
 
+    char dia_digitado[BUFFER];
+    char mes_digitado[BUFFER];
+    char anio_digitado[BUFFER];
+
     printf("\n[!] Digite el dia de la factura: ");
-    scanf("%d",&dia_factura);
+    scanf("%s",&dia_digitado);
     printf("\n[!] Digite el mes de la factura: ");
-    scanf("%d",&mes_factura);
+    scanf("%s",&mes_digitado);
     printf("\n[!] Digite el anio de la factura: ");
-    scanf("%d",&anio_factura);
+    scanf("%s",&anio_digitado);
+
+    if (!VerificarNumero(dia_digitado) || !VerificarNumero(mes_digitado) || !VerificarNumero(anio_digitado)) {
+        printf("[ERROR] = POR FAVOR DIGITE UNA FECHA VALIDA\n");
+        PauseSinTimer(2);
+        TerminarRegistroDeVenta(lineasFactura, cant_prod_elegidos);
+        return;
+    }
+
+    dia_factura = strtol(dia_digitado,NULL,10);
+    mes_factura = strtol(mes_digitado,NULL,10);
+    anio_factura = strtol(anio_digitado,NULL,10);
+
+
     if (dia_factura > 31 || dia_factura < 1 || mes_factura > 12 || mes_factura < 1 || anio_factura > 2050 || anio_factura < 2000) {
         printf("[ERROR] = POR FAVOR DIGITE UNA FECHA VALIDA\n");
         PauseSinTimer(2);
@@ -1375,8 +1840,9 @@ void TerminarRegistroDeVenta(LineaFactura* lineasFactura, int cant_prod_elegidos
 
 /*****Nombre***************************************
 * RegistrarDetallesFacturaEnBdd
-*****Descripción*******************************************
-* Metodo para registrar los detalles de la factura en la BD
+*****Descripción y objetivo*******************************************
+* Metodo para registrar los detalles de la factura en la BD.
+* Con el objetivo de registrar los productos a la factura.
 *****Retorno***********************************************
 * Sin retorno 
 *****Entradas********************************************************
@@ -1393,8 +1859,8 @@ void RegistrarDetallesFacturaEnBdd(LineaFactura* lineasFactura, int cant_prod_el
 
 /*****Nombre***************************************
 * ObtenerAreaProduccion
-*****Descripción***************************
-* Metodo para obtener el area de produccion
+*****Descripción y objetivo***************************
+* Metodo para obtener el area de produccion de la BD.
 *****Retorno*******************************
 * Objeto area
 *****Entradas*************************************
@@ -1415,7 +1881,7 @@ Area ObtenerAreaProduccion(int id_area) {
 
 /*****Nombre***************************************
 * ExisteAreaProduccion
-*****Descripción***************************
+*****Descripción y objetivo***************************
 * Metodo para verificar si existe una area
 *****Retorno*******************************
 * Valor booleano
@@ -1433,8 +1899,9 @@ bool ExisteAreaProduccion(int id_area_produccion) {
 
 /*****Nombre***************************************
 * StringSoloConLetras
-*****Descripción*********************************************************
-* Metodo para verificar si una cadena de caracteres contiene algun numero
+*****Descripción y objetivo*********************************************************
+* Metodo para verificar si una cadena de caracteres contiene algun numero.
+* El objetivo es validar que la cadena solo contenga letras.
 *****Retorno*************************************************************
 * Valor booleano
 *****Entradas*************************************
@@ -1454,7 +1921,7 @@ bool StringSoloConLetras(char* cadena) {
 
 /*****Nombre***************************************
 * ObtenerProductoExistente
-*****Descripción***************************************************
+*****Descripción y objetivo***************************************************
 * Metodo para obtener un producto existente en la lista de productos
 *****Retorno*******************************************************
 * Objeto producto
@@ -1476,8 +1943,9 @@ Producto ObtenerProductoExistente(char* xd) {
 
 /*****Nombre***************************************
 * EliminarLineaFactura
-*****Descripción******************************
-* Metodo para eliminar una linea de la factura
+*****Descripción y objetivo******************************
+* Metodo para eliminar una linea de la factura. El objetivo es eliminar una linea de la factura
+* y actualizar el arreglo de lineas de factura.
 *****Retorno**********************************
 * Objeto lineafactura
 *****Entradas*******************************************************
@@ -1503,7 +1971,7 @@ LineaFactura* EliminarLineaFactura(LineaFactura* lineasFactura, int cant_prod_el
 
 /*****Nombre***************************************
 * ImprimirProductosElegidos
-*****Descripción***************************************
+*****Descripción y objetivo***************************************
 * Metodo para imprimir productos elegidos en la factura
 *****Retorno*******************************************
 * Sin retorno
@@ -1519,8 +1987,10 @@ void ImprimirProductosElegidos(LineaFactura* lineasFactura, int cant_prod_elegid
 
 /*****Nombre***************************************
 * ExisteProductoEnLinea
-*****Descripción*******************************************
-* Metodo para verificar si existe un producto en la factura
+*****Descripción y objetivo*******************************************
+* Metodo para verificar si existe un producto en la factura.
+* Tiene como objetivo verificar si existe un producto en la factura y
+* poder acumular la cantidad de productos en la factura.
 *****Retorno************************************************
 * Valor booleano
 *****Entradas***********************************************************
@@ -1537,7 +2007,7 @@ bool ExisteProductoEnLinea(LineaFactura* lineasFactura, int cant_prod_elegidos, 
 
 /*****Nombre***************************************
 * AgregarRepetidoLineaFactura
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Metodo para sumar mas productos existentes en la factura
 *****Retorno************************************************
 * Sin retorno
@@ -1555,7 +2025,7 @@ void AgregarRepetidoLineaFactura(LineaFactura* lineasFactura, int cant_prod_eleg
 
 /*****Nombre***************************************
 * AgregarLineaFactura
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Metodo para agregar una linea a la factura
 *****Retorno************************************************
 * Objeto linea factura
@@ -1577,7 +2047,7 @@ LineaFactura* AgregarLineaFactura(LineaFactura* lineasFactura, int cant_prod_ele
 
 /*****Nombre***************************************
 * MenuEliminarNomina
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Menu para eliminar nominas
 *****Retorno************************************************
 * Sin retorno
@@ -1626,7 +2096,7 @@ void MenuEliminarNomina() {
 
 /*****Nombre***************************************
 * ExisteNomina
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Metodo para verificar la existencia de una nomina
 *****Retorno************************************************
 * Valor booleano
@@ -1644,7 +2114,7 @@ bool ExisteNomina(int id_nomina) {
 
 /*****Nombre***************************************
 * EliminarNomina
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Metodo para eliminar una nomina
 *****Retorno************************************************
 * Valor booleano
@@ -1668,7 +2138,7 @@ bool EliminarNomina(int id_nomina) {
 
 /*****Nombre***************************************
 * MostrarTodasLasNominasConSalarios
-*****Descripción*******************************************
+*****Descripción y objetivo*******************************************
 * Metodo para imprimir las nominas con salarios
 *****Retorno************************************************
 * Sin retorno
@@ -1718,7 +2188,7 @@ void MostrarTodasLasNominasConSalarios() {
 
 /*****Nombre***************************************
 * MostrarTodasLasNominas
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Metodo para imprimir todas las nominas
 *****Retorno**************************************
 * Sin retorno 
@@ -1745,7 +2215,7 @@ void MostrarTodasLasNominas() {
 
 /*****Nombre***************************************
 * Menu_VI01
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Menu de gestion de valores iniciales
 *****Retorno**************************************
 * Sin retorno 
@@ -1782,7 +2252,7 @@ void Menu_VI01() {
             return;
         default:
             printf("[ERROR] = POR FAVOR DIGITE UNA DE LAS OPCIONES DISPONIBLES!\n");
-            Pause();
+            PauseSinTimer(2);
             break;
     }
     Menu_VI01();
@@ -1790,9 +2260,11 @@ void Menu_VI01() {
 
 /*****Nombre***************************************
 * CambiarValorDeCargaSocial
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Cambia el valor de las cargas sociales con un
-* valor nuevo digitado por el usuario
+* valor nuevo digitado por el usuario. El objetivo es
+* que el usuario pueda cambiar el valor de las cargas
+* sociales de la empresa.
 *****Retorno**************************************
 * Sin retorno 
 *****Entradas*************************************
@@ -1810,7 +2282,7 @@ void CambiarValorDeCargaSocial() {
     getchar();
 
     char opcion_01[BUFFER];
-    fgets(opcion_01,BUFFER,stdin);
+    scanf("%s", &opcion_01);
 
     printf("%s", opcion_01);
     if (opcion_01[0] == '\n' && opcion_01[1] == '\0') {
@@ -1839,7 +2311,7 @@ void CambiarValorDeCargaSocial() {
 
 /*****Nombre***************************************
 * MostrarInformacionDelNegocio
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Muestra la informacion del negocio en pantalla
 *****Retorno**************************************
 * Sin retorno 
@@ -1855,7 +2327,7 @@ void MostrarInformacionDelNegocio() {
 
 /*****Nombre***************************************
 * Menu_RN01
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Menu de gestion de regitro de nominas
 *****Retorno**************************************
 * Sin retorno 
@@ -1914,7 +2386,7 @@ void Menu_RN01() {
 
 /*****Nombre***************************************
 * AgregarEmpleadosANomina
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Agrega los empleados a la nomina, este primer
 * menu es para agregar definir y registrar una
 * nomina para posteriormente poder agregar los
@@ -1927,6 +2399,9 @@ void Menu_RN01() {
 **************************************************/
 void AgregarEmpleadosANomina(int mes, int anio) {
     system("clear");
+
+    Fecha fecha_nom = {1, mes, anio};
+
     printf("[REGISTRO DE NOMINAS]\n");
     printf("Fecha (mes: %d/ anio: %d)\n", mes, anio);
     printf("Monto porcentual de cargas sociales: %.2f%\n", cargoSocial.porcentaje * 100);
@@ -1963,23 +2438,26 @@ void AgregarEmpleadosANomina(int mes, int anio) {
         }
         printf("[ERROR] <= NO SE PUDO REGISTRAR LA PLANILLA!\n");
         PauseSinTimer(2);
+        EliminarPlanillaPorFecha(fecha_nom);
         Menu_RN01();
         return;
     }
     if (strcmp(opcion_01,"n") == 0 || strcmp(opcion_01,"N") == 0) {
         printf("[!] Se cancelo el registro, volviendo al menu anterior\n");
         PauseSinTimer(2);
+        EliminarPlanillaPorFecha(fecha_nom);
         Menu_RN01();
         return;
     }
     printf("[ERROR] <= DEBE DIGITAR S O N PARA CONFIRMAR O NO CONFIRMAR LA FECHA!\n");
+    EliminarPlanillaPorFecha(fecha_nom);
     PauseSinTimer(2);
     Menu_RN01();
 }
 
 /*****Nombre***************************************
 * AgregarEmpleadosANominaAux
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Una vez que se ha registrado la planilla o nomina,
 * se procede a agregar los empleados a la nomina
 * se les va a mostrar la lista de empleados registrados en
@@ -2088,7 +2566,7 @@ void AgregarEmpleadosANominaAux(Planilla plan, EmpleadoConRol* empleados_elegido
             printf("[!] ¿Esta seguro de que desea registrar la nomina? (s/n): ");
             printf("\n> ");
             scanf("%s",confirmacion);
-            if (strcmp(confirmacion, "s") == 0 || strcmp(confirmacion, "S")) {
+            if (strcmp(confirmacion, "s") == 0 || strcmp(confirmacion, "S") == 0) {
                 // Registro de empleados en la bdd
                 bool exito = true;
                 for (int i = 0; i < cant_empleados_elegidos; i++) {
@@ -2111,6 +2589,10 @@ void AgregarEmpleadosANominaAux(Planilla plan, EmpleadoConRol* empleados_elegido
                 EliminarPlanillaPorFecha(plan.fecha);
                 PauseSinTimer(2);
             }
+            else {
+                printf("[!] <= LA NOMINA NO FUE REGISTRADA!\n");
+                PauseSinTimer(2);
+            }
             AgregarEmpleadosANominaAux(plan, empleados_elegidos, cant_empleados_restantes);
             return;
         }
@@ -2130,7 +2612,7 @@ void AgregarEmpleadosANominaAux(Planilla plan, EmpleadoConRol* empleados_elegido
 
 /*****Nombre***************************************
 * EliminarEmpleadoDeNomina
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Elimina un empleado de la lista de empleados elegidos para la nomina
 * utilizando la cedula del empleado como parametro
 *****Retorno**************************************
@@ -2159,28 +2641,97 @@ void EliminarEmpleadoDeNomina(char* cedula, EmpleadoConRol* empleados_elegidos, 
     empleados_elegidos = nuevos_empleados;
 }
 
-
+/*****Nombre***************************************
+* Menu_BA01
+*****Descripción y objetivo**********************************
+* Función para la impresión de los balances 
+* anuales de la empresa.
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* Sin entradas
+**************************************************/
 void Menu_BA01() {
-    /* al ser dos consultas de listas diferentes y de cantidades diferentes presento los datos por planilla y por facturas de forma correspondiente
+    system("clear");
+    int* aniosConFacturas = ObtenerAniosConFacturas();
+    int* aniosConPlanillas = ObtenerAniosConPlanillas();
+    int cantidadAniosConFacturas = ObtenerCantidadAniosConFacturas();
+    int cantidadAniosConPlanillas = ObtenerCantidadAniosConPlanillas();
 
+    int* aniosConFacturasYPlanillas = InterseccionListas(
+        aniosConFacturas, cantidadAniosConFacturas, 
+        aniosConPlanillas, cantidadAniosConPlanillas
+    );
+
+    int indice = 0;
+    printf("===================[ REPORTES ANUALES ]===================\n");
+
+    // Se imprimen los que tienen facturas y planillas
+    while (aniosConFacturasYPlanillas[indice] != -1) {
+        MostrarReporteAnualCompleto(aniosConFacturasYPlanillas[indice]);
+        indice++;
+    }
+
+    // Se imprimen los que tienen facturas pero no planillas
+    for (int i = 0; i < cantidadAniosConFacturas; i++) {
+        if (NumPerteneceALista(aniosConFacturasYPlanillas, cantidadAniosConFacturas, aniosConFacturas[i])) {
+            continue;
+        }
+        MostrarReporteFacturaAnual(aniosConFacturas[i]);
+    }
+
+    // Se imprimen los que tienen planillas pero no facturas
+    for (int i = 0; i < cantidadAniosConPlanillas; i++) {
+        if (NumPerteneceALista(aniosConFacturasYPlanillas, cantidadAniosConPlanillas, aniosConPlanillas[i])) {
+            continue;
+        }
+        MostrarReportePlanillaAnual(aniosConPlanillas[i]);
+    }
+    printf("\n========================================================\n");
+    printf("[ i ] Seleccione un año para ver el reporte completo\n");
+    printf("(Escriba una letra para volver al menu anterior\n");
+    printf("> ");
+    char opcion[BUFFER];
+    scanf("%s", opcion);
+
+    if (!VerificarNumero(opcion)) {
+        printf("[!!] Volviendo al menu anterior");
+        PauseSinTimer(2);
+        Menu_OA1();
+        return;
+    }
+    int anio = atoi(opcion);
+    if (!NumPerteneceALista(aniosConFacturas, cantidadAniosConFacturas, anio) || !NumPerteneceALista(aniosConPlanillas, cantidadAniosConPlanillas, anio)) {
+        printf("[!!] No hay reporte para el año %d\n", anio);
+        PauseSinTimer(2);
+        Menu_BA01();
+        return;
+    }
+
+    // Se muestran los que tienen facturas y planillas
+    MostrarReportePorMesDeAnio(anio);
+    PauseSinTimer(2);
+
+
+    /*
     Planilla* listaPlanillas;
-    listaPlanillas = ObtenerTotalPlanillas(); no esta el metodo en el dao
+    listaPlanillas = ObtenerTotalPlanillas(); // P
 
     printf("--------- [LISTA DE AÑOS CON PLANILLA REGISTRADA] ---------\n");
-    int cantPlanillas = ObtenerCantidadPlanillas(); no esta el metodo en el dao
+    int cantPlanillas = ObtenerCantidadPlanillas(); // P
 
     for (int i = 0;i<cantPlanillas;i++) {
         double cargas = ObtenerTotalNominas(listaPlanilas[i].fecha.anio);
         printf("\nAÑO = %d\nTOTAL CON CARGAS = %f",cargas,listaPlanillas[i].monto_carga_social);
     }
 
-    filtrar facturas por año
+    //filtrar facturas por año
     Factura* listaFacturas;
     int cantFacturas = ObtenerCantidadFacturas(id del comercio);
-    listaFacturas = ObtenerFacturasTotal(); no esta el metodo en el dao
+    listaFacturas = ObtenerFacturasTotal(); // no esta el metodo en el dao
 
 
-    para el balance se necesita el total de la nomina y el subtotal de ventas = ObtenerTotalNomina(Planilla* lista, int cantNominas, int anio);
+    double totalNom = ObtenerTotalNomina(Planilla* lista, int cantNominas, int anio);
 
     printf("--------- [LISTA DE AÑOS CON FACTURAS REGISTRADAS] ---------\n");
     for (int i = 0;i<cantFacturas;i++) {
@@ -2205,7 +2756,7 @@ void Menu_BA01() {
         Factura* resFacturas = ObtenerFacturasPorAnio(anio2);
         int cantFacturasConsultadas = ObtenerCantFacturasPorAnio(anio2);
 
-        no se si hay que mostrar el balance porque en este caso no se si en lugar del total de la nomina sea la carga y seria hacer un metodo para obtener la carga por mes
+        // no se si hay que mostrar el balance porque en este caso no se si en lugar del total de la nomina sea la carga y seria hacer un metodo para obtener la carga por mes
 
         printf("\n\n=== [DETALLES DE LAS PLANILLAS] ===\n");
         for (int i=0;i<cantFacturasConsultadas;i++) {
@@ -2219,55 +2770,345 @@ void Menu_BA01() {
         PauseSinTimer(1);
         Menu_BA01();
     }
-
     */
-    
 }
 
+/*****Nombre***************************************
+* MostrarReportePorMesDeAnio
+*****Descripción y objetivo**********************************
+* Muestra el reporte de un año en especifico
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* int anio - año del reporte a mostrar
+**************************************************/
+void MostrarReportePorMesDeAnio(int anio) {
 
-/*
+    printf("\n====================[ REPORTE POR MES DE AÑO %d ]====================\n", anio);
+
+    Factura* listaFacturasAnual = ObtenerFacturasPorAnio(anio);
+    PlanillaConCantEmpleados* listaPlanillasAnual = ObtenerPlanillasPorAnio(anio);
+
+    int cantidadFacturasAnual = ObtenerCantidadFacturasPorAnio(anio);
+    int cantidadPlanillasAnual = ObtenerCantidadPlanillasPorAnio(anio);
+
+    for (int i = 1; i <= 12; i++) {
+        Factura* facturasDelMes;
+        PlanillaConCantEmpleados* planillasDelMes;
+        int cantidadFacturasDelMes = ObtenerCantidadFacturasPorMes(listaFacturasAnual, cantidadFacturasAnual, i);
+        int cantidadPlanillasDelMes = ObtenerCantidadPlanillasPorMes(listaPlanillasAnual, cantidadPlanillasAnual, i);
+
+        double subtotal_ventas_mensual = 0;
+        double impuesto_ventas_mensual = 0;
+        double total_nomina_mensual = 0;
+        double balance_mensual = 0;
+
+        if (cantidadFacturasDelMes > 0) {
+            facturasDelMes = ObtenerFacturasDeUnMes(listaFacturasAnual, cantidadFacturasAnual, i);
+
+            for (int j = 0; j < cantidadFacturasDelMes; j++) {
+                subtotal_ventas_mensual += facturasDelMes[j].subtotal;
+                impuesto_ventas_mensual += facturasDelMes[j].impuesto;
+            }
+        }
+
+        if (cantidadPlanillasDelMes > 0) {
+            for (int j = 0; j < cantidadPlanillasAnual; j++) {
+                if (listaPlanillasAnual[j].fecha.mes == i) {
+                    int cant_empleados = listaPlanillasAnual[j].cantidad_empleados;
+                    Fecha fechaMes;
+                    fechaMes.dia = 1;
+                    fechaMes.mes = i;
+                    fechaMes.anio = anio;
+                    EmpleadoConRol* empDelMes = ObtenerEmpleadosDePlanilla(fechaMes);
+                    for (int m = 0; m < cant_empleados; m++) {
+                        total_nomina_mensual += empDelMes[m].salario_mensual * listaPlanillasAnual[j].monto_carga_social;
+                    }
+                }
+            }
+        }
+
+        balance_mensual = subtotal_ventas_mensual - total_nomina_mensual;
+
+        printf(
+            "\n[MES (%2i)] Gasto de nomina: %10.2f | Subtotal de ventas: %10.2f | Impuestos: %10.2f | Balance: %10.2f", 
+            i, 
+            total_nomina_mensual, 
+            subtotal_ventas_mensual, impuesto_ventas_mensual, 
+            balance_mensual
+        );
+
+    }
+    printf("\n========================================================================\n");
+}
+
+/*****Nombre***************************************
+* ObtenerPlanillasDeUnMes
+*****Descripción y objetivo**********************************
+* Recorre la lista de planillas y devuelve una lista de planillas que corresponden al mes indicado.
+* Tiene como objetivo obtener las planillas de un mes determinado.
+*****Retorno**************************************
+* PlanillaConCantEmpleados* - lista de planillas del mes indicado
+*****Entradas*************************************
+* PlanillaConCantEmpleados* listaPlanillas - lista de planillas a recorrer
+* int cantPlanillas - cantidad de planillas a recorrer
+* int mes - mes a buscar
+**************************************************/
+PlanillaConCantEmpleados* ObtenerPlanillasDeUnMes(PlanillaConCantEmpleados* planillasAnual, int cantidadPlanillaDelAnio, int mes) {
+    PlanillaConCantEmpleados* planillasDelMes = (PlanillaConCantEmpleados*)malloc(sizeof(PlanillaConCantEmpleados) * cantidadPlanillaDelAnio);
+    int cantidadPlanillasDelMes = ObtenerCantidadPlanillasPorMes(planillasAnual, cantidadPlanillaDelAnio, mes);
+    int contador = 0;
+    for (int i = 0; i < cantidadPlanillaDelAnio; i++) {
+        if (planillasAnual[i].fecha.mes == mes) {
+            planillasDelMes[contador] = planillasAnual[i];
+            contador++;
+        }
+    }
+    return planillasDelMes;
+}
+
+/*****Nombre***************************************
+* ObtenerFacturasDeUnMes
+*****Descripción y objetivo**********************************
+* Recorre la lista de facturas y devuelve una lista de facturas que corresponden al mes indicado.
+* Tiene como objetivo obtener las facturas de un mes determinado.
+*****Retorno**************************************
+* Factura* - lista de facturas del mes indicado
+*****Entradas*************************************
+* Factura* listaFacturas - lista de facturas a recorrer
+* int cantFacturas - cantidad de facturas a recorrer
+* int mes - mes a buscar
+**************************************************/
+Factura* ObtenerFacturasDeUnMes(Factura* facturaAnual, int cantidadFacturasDelAnio, int mes) {
+    Factura* facturasDelMes = (Factura*)malloc(sizeof(Factura) * cantidadFacturasDelAnio);
+    int cantidadFacturasDelMes = ObtenerCantidadFacturasPorMes(facturaAnual, cantidadFacturasDelAnio, mes);
+    int contador = 0;
+    for (int i = 0; i < cantidadFacturasDelAnio; i++) {
+        if (facturaAnual[i].fecha_facturacion.mes == mes) {
+            facturasDelMes[contador] = facturaAnual[i];
+            contador++;
+        }
+    }
+    return facturasDelMes;
+}
+
+/*****Nombre***************************************
+* ObtenerCantidadPlanillasPorMes
+*****Descripción y objetivo**********************************
+* Obtiene la cantidad de planillas que corresponden al mes indicado.
+*****Retorno**************************************
+* int - cantidad de planillas del mes indicado
+*****Entradas*************************************
+* PlanillaConCantEmpleados* listaPlanillas - lista de planillas a recorrer
+* int cantPlanillas - cantidad de planillas a recorrer
+* int mes - mes a buscar
+**************************************************/
+int ObtenerCantidadPlanillasPorMes(PlanillaConCantEmpleados* listaEmpleadosAnual, int cantidadEmpleadosAnual, int mes) {
+    int cantidadPlanillas = 0;
+    for (int i = 0; i < cantidadEmpleadosAnual; i++) {
+        if (listaEmpleadosAnual[i].fecha.mes == mes) {
+            cantidadPlanillas++;
+        }
+    }
+    return cantidadPlanillas;
+}
+
+/*****Nombre***************************************
+* ObtenerCantidadDeFacturasPorMes
+*****Descripción y objetivo**********************************
+* Obtiene la cantidad de facturas que corresponden al mes indicado.
+*****Retorno**************************************
+* int - cantidad de facturas del mes indicado
+*****Entradas*************************************
+* Factura* listaFacturasAnual - lista de facturas a recorrer
+* int cantFacturasAnual - cantidad de facturas a recorrer
+* int mes - mes a buscar
+**************************************************/
+int ObtenerCantidadFacturasPorMes(Factura* listaFacturasAnual, int cantidadFacturasAnual, int mes) {
+    int cant = 0;
+    for (int i = 0; i < cantidadFacturasAnual; i++) {
+        if (listaFacturasAnual[i].fecha_facturacion.mes == mes) {
+            cant++;
+        }
+    }
+    return cant;
+}
+
+/*****Nombre***************************************
+* MostrarReportePlanillaAnual
+*****Descripción y objetivo**********************************
+* Muestra el reporte de planillas anual según el año indicado.
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* int anio - año a buscar
+**************************************************/
+void MostrarReportePlanillaAnual(int anio) {
+
+    double total_nomina = ObtenerTotalNominasConCargasPorAnio(anio);
+
+    double subtotal_ventas = 0;
+    double impuestos = 0;
+
+    double balance = subtotal_ventas - total_nomina;
+
+    printf(
+        "\n [%d] Gasto de nomina: %10.2f | Subtotal venta: %10.2f | Impuestos: %10.2f | Balance: %10.2f", 
+        anio, 
+        total_nomina, 
+        subtotal_ventas, 
+        impuestos,
+        balance
+    );
+}
+
+/*****Nombre***************************************
+* MostrarReporteFacturasAnual
+*****Descripción y objetivo**********************************
+* Muestra el reporte de facturas anual según el año indicado.
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* int anio - año a buscar
+**************************************************/
+void MostrarReporteFacturaAnual(int anio) {
+    ReporteAnual reporte_ventas = ObtenerReporteAnual((char*)"001", anio);
+
+    double total_nomina = 0;
+
+    double balance = reporte_ventas.subtotal_ventas - total_nomina;
+
+    printf("\n [%d] Gasto de nomina: %10.2f | Subtotal venta: %10.2f | Impuestos: %10.2f | Balance: %10.2f\n", anio, total_nomina, reporte_ventas.subtotal_ventas, reporte_ventas.total_impuesto, balance);
+}
+
+/*****Nombre***************************************
+* MostrarReporteAnualCompleto
+*****Descripción y objetivo**********************************
+* Muestra en pantalla el reporte anual completo. De forma que
+* se muestre el reporte de planillas anual y el reporte de facturas anual.
+*****Retorno**************************************
+* Sin retorno 
+*****Entradas*************************************
+* int anio - año a buscar
+**************************************************/
+void MostrarReporteAnualCompleto(int anio) {
+    // Llegarán tanto las planillas como las facturas para el año indicado
+    double total_nomina = ObtenerTotalNominasConCargasPorAnio(anio);
+    ReporteAnual reporte_ventas = ObtenerReporteAnual((char*)"001", anio);
+
+    double balance = reporte_ventas.subtotal_ventas - total_nomina;
+
+    printf("\n [%d] Gasto de nomina: %10.2f | Subtotal venta: %10.2f | Impuestos: %10.2f |  Balance: %10.2f\n", anio, total_nomina, reporte_ventas.subtotal_ventas, reporte_ventas.total_impuesto, balance);
+}
+
+/*****Nombre***************************************
+* NumPerteneceAlista
+*****Descripción y objetivo**********************************
+* Pregunta si un número pertenece a una lista de números.
+*****Retorno**************************************
+* true - si el número pertenece a la lista
+* false - si el número no pertenece a la lista
+*****Entradas*************************************
+* lista - lista de números a recorrer
+* int cantidad - cantidad de números a recorrer
+* int numero - número a buscar
+**************************************************/
+bool NumPerteneceALista(int* lista, int cantidad, int numero) {
+    for (int i = 0; i < cantidad; i++) {
+        if (lista[i] == -1) {
+            break;
+        }
+        if (lista[i] == numero) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*****Nombre***************************************
+* InterseccionListas
+*****Descripción y objetivo**********************************
+* Obtiene la intersección de dos listas de números.
+*****Retorno**************************************
+* int* - lista de números que pertenecen a ambas listas
+*****Entradas*************************************
+* int* listaA - lista de números a recorrer
+* int tamanioListaA - cantidad de números a recorrer de la lista B
+* int* listaB - lista de números a recorrer
+* int tamanioListaB - cantidad de números a recorrer de la listaB
+**************************************************/
+int* InterseccionListas(int* listaA, int tamanioListaA, int* listaB, int tamanioListaB) {
+    int* listaInterseccion = malloc(sizeof(int) * (tamanioListaA + tamanioListaB));
+    int indice = 0;
+    for (int i = 0; i < tamanioListaA; i++) {
+        for (int j = 0; j < tamanioListaB; j++) {
+            if (listaA[i] == listaB[j]) {
+                listaInterseccion[indice] = listaA[i];
+                indice++;
+            }
+        }
+    }
+    listaInterseccion[indice] = -1;
+    return listaInterseccion;
+}
+
+/*****Nombre***************************************
+* ObtenerSubtotalVentas
+*****Descripción y objetivo**********************************
+* Obtiene el subtotal de ventas por un año en particular
+*****Retorno**************************************
+* double - subtotal de ventas del año
+*****Entradas*************************************
+* int anio - año a buscar
+**************************************************/
 double ObtenerSubtotalVentas(int anio) {
     Factura* listaFacturas = ObtenerFacturasPorAnio(anio);
     int cantFacturas = ObtenerCantidadFacturasPorAnio(anio);
     double res = 0;
-    for (int i = 0, i<cantFacturas,i++)
+    for (int i = 0; i<cantFacturas;i++)
         res+=listaFacturas[i].subtotal;
     return res;
 }
 
+/*****Nombre***************************************
+* ObtenerImpuestosVentas
+*****Descripción y objetivo**********************************
+* Obtener el total de impuestos de ventas por un año en particular
+*****Retorno**************************************
+* double - total de impuestos de ventas del año
+*****Entradas*************************************
+* int anio - año a buscar
+**************************************************/
 double ObtenerImpuestoVentas(int anio) {
     Factura* listaFacturas = ObtenerFacturasPorAnio(anio);
     int cantFacturas = ObtenerCantidadFacturasPorAnio(anio);
     double res = 0;
-    for (int i = 0, i<cantFacturas,i++)
+    for (int i = 0; i<cantFacturas; i++)
         res+=listaFacturas[i].impuesto;
     return res;
 }
 
-
+/*****Nombre***************************************
+* ObtenerTotalNomina
+*****Descripción y objetivo**********************************
+* Obtiene el total de la nomina de un año en particular
+*****Retorno**************************************
+* double - total de la nomina del año
+*****Entradas*************************************
+* int anio - año a buscar
+**************************************************/
 double ObtenerTotalNomina(int anio) {
-    Planilla* listaPlanillas = ObtenerPlanillasPorAnio(anio);
+    PlanillaConCantEmpleados* listaPlanillas = ObtenerPlanillasPorAnio(anio);
     int cantNominas = ObtenerCantidadPlanillasPorAnio(anio);
     double res = 0;
-    for (int i = 0, i<cantNominas,i++)
+    for (int i = 0; i<cantNominas;i++)
         res+=listaPlanillas[i].monto_carga_social;
     return res;
 }
-*/
-
-
-
-
-
-
-
-
-
-
 
 /*****Nombre***************************************
 * CedulaFueElegida
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Pregunta si la cedula fue elegida para la nomina
 * utilizando la cedula del empleado como parametro
 *****Retorno**************************************
@@ -2289,7 +3130,7 @@ bool CedulaFueElegida(char* cedula, EmpleadoConRol* empleados_elegidos, int cant
 
 /*****Nombre***************************************
 * VerificarCedulaEmpleado
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Verifica que la cedula del empleado exista en el sistema
 *****Retorno**************************************
 * Un valor booleano que indica si la cedula existe
@@ -2309,7 +3150,7 @@ bool VerificarCedulaEmpleado(char* cedula_elegida) {
 
 /*****Nombre***************************************
 * ImprimirListaDeEmpleados
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Muestra en pantalla a una lista de empleados
 *****Retorno**************************************
 * Sin retorno 
@@ -2332,7 +3173,7 @@ void ImprimirListaDeEmpleados(EmpleadoConRol* empleados_elegidos, int cantidad_e
 
 /*****Nombre***************************************
 * VerificarNumero
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Programa que valida si la entrada es un numero
 *****Retorno**************************************
 * Valor booleano 
@@ -2346,7 +3187,7 @@ bool VerificarNumero(char num[]) {
 
 /*****Nombre***************************************
 * Pause
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Metodo que realiza una pausa de 3 segundos 
 *****Retorno**************************************
 * Sin retorno 
@@ -2363,7 +3204,7 @@ void Pause() {
 
 /*****Nombre***************************************
 * PauseSinTimer
-*****Descripción**********************************
+*****Descripción y objetivo**********************************
 * Pausa la ejecucion del programa sin timer establecido
 *****Retorno**************************************
 * Sin retorno
