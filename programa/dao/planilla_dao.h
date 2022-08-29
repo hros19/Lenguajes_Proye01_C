@@ -56,6 +56,112 @@ static MYSQL_RES *res;
 static MYSQL_ROW row;
 
 /*****Nombre************************************************************
+* ObtenerAniosConPlanillas
+*****Descripción********************************************************
+* Obtiene los años con planillas registradas en la base de datos.
+*****Retorno************************************************************
+* int* - Un arreglo de enteros con los años con planillas registradas.
+*****Entradas***********************************************************
+* No tiene entradas
+************************************************************************/
+int* ObtenerAniosConPlanillas() {
+    MYSQL *conn = Conectar();
+    int* anios = NULL;
+    int cantidad = 0;
+    char query[200];
+    sprintf(query, "CALL get_anios_con_planillas()");
+    if (mysql_query(conn, query)) {
+        mysql_close(conn);
+        return anios;
+    }
+    res = mysql_store_result(conn);
+    while ((row = mysql_fetch_row(res))) {
+        anios = realloc(anios, sizeof(int) * (cantidad + 1));
+        anios[cantidad] = atoi(row[0]);
+        cantidad++;
+    }
+    mysql_close(conn);
+    return anios;
+}
+
+/*****Nombre************************************************************
+* ObtenerCantidadAniosConPlanillas
+*****Descripción********************************************************
+* Obtiene la cantidad de años con planillas registradas en la base de datos.
+*****Retorno************************************************************
+* Un entero con la cantidad de años con planillas registradas.
+*****Entradas***********************************************************
+* Sin entradas
+************************************************************************/
+int ObtenerCantidadAniosConPlanillas() {
+    MYSQL *conn = Conectar();
+    int cantidad = 0;
+    char query[200];
+    sprintf(query, "CALL get_cant_anios_con_planillas()");
+    if (mysql_query(conn, query)) {
+        mysql_close(conn);
+        return cantidad;
+    }
+    MYSQL_RES* res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    cantidad = atoi(row[0]);
+    mysql_close(conn);
+    return cantidad;
+}
+
+/*****Nombre************************************************************
+* ObtenerCantidadPlanillasPorAnio
+*****Descripción********************************************************
+* Obtiene la cantidad de planillas registradas en un año en la base de datos.
+*****Retorno************************************************************
+* int - La cantidad de planillas registradas en el año.
+*****Entradas***********************************************************
+* int anio - El año del cual se quiere obtener la cantidad de planillas.
+************************************************************************/
+int ObtenerCantidadPlanillasPorAnio(int anio) {
+    MYSQL *conn = Conectar();
+    int cantidad = 0;
+    char query[200];
+    sprintf(query, "CALL get_cantidad_planillas_por_anio(%i)", anio);
+    if (mysql_query(conn, query)) {
+        mysql_close(conn);
+        return -1;
+    }
+    res = mysql_store_result(conn);
+    row = mysql_fetch_row(res);
+    cantidad = atoi(row[0]);
+    mysql_close(conn);
+    return cantidad;
+}
+
+/*****Nombre************************************************************
+* ObtenerTotalNominasConCargasPorAnio
+*****Descripción********************************************************
+* Obtiene el total de las nominas de los empleados de un anio dado.
+* Calculado con el monto de la carga social.
+*****Retorno************************************************************
+* double - El total de las nominas de los empleados de un anio dado.
+*****Entradas***********************************************************
+* - int anio: El anio de las nominas a obtener.
+************************************************************************/
+double ObtenerTotalNominasConCargasPorAnio(int anio) {
+    MYSQL *conn = Conectar();
+    char query[200];
+    sprintf(query, "CALL get_total_nomina_con_cargas_por_anio(%d)", anio);
+    
+    if (mysql_query(conn, query)) {
+        mysql_close(conn);
+        return -1;
+    }
+
+    MYSQL_RES* res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    double total = atof(row[0]);
+    mysql_close(conn);
+    return total;
+}
+
+/*****Nombre************************************************************
 * RegistrarPlanilla
 *****Descripción********************************************************
 * Registra una nueva planilla en la base de datos.
@@ -251,6 +357,16 @@ Planilla ObtenerPlanillaPorFecha(Fecha fecha) {
     return planilla;
 }
 
+/*****Nombre************************************************************
+* ObtenerPlanillasConCantEmpleados
+*****Descripción********************************************************
+* Obtiene las planillas con la cantidad de empleados registrados en
+* cada una.
+*****Retorno************************************************************
+* Un arreglo (PlanillaConCantEmpleados *) con todas las planillas obtenidas.
+*****Entradas***********************************************************
+Sin entradas
+************************************************************************/
 PlanillaConCantEmpleados* ObtenerPlanillasConCantEmpleados() {
     MYSQL *conn = Conectar();
     char query[256];
@@ -299,6 +415,15 @@ PlanillaConCantEmpleados* ObtenerPlanillasConCantEmpleados() {
     return NULL;
 }
 
+/*****Nombre************************************************************
+* ObtenerPlanillasPorAnio
+*****Descripción********************************************************
+* Tiene todas las planillas de un año determinado.
+*****Retorno************************************************************
+* Un arreglo de estructuras (Planilla) con todas las planillas de un año.
+*****Entradas***********************************************************
+* - int anio: Año de las facturas.
+************************************************************************/
 PlanillaConCantEmpleados* ObtenerPlanillasPorAnio(int p_anio) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -386,6 +511,16 @@ int ObtenerCantEmpleadosPorPlanilla(int idPlanilla) {
     return cant_empleados;
 }
 
+/*****Nombre************************************************************
+* EliminarPlanilla
+*****Descripción********************************************************
+* Obtiene el reporte anual de ventas de un negocio en particular.
+*****Retorno************************************************************
+* Un ReporteAnual de las ventas del negocio.
+*****Entradas***********************************************************
+* - char* cedula_comercio: Cedula del comercio.
+* - int anio: Año de las facturas.
+************************************************************************/
 bool EliminarPlanilla(int mes, int anio) {
     MYSQL *conn = Conectar();
     char query[256];
@@ -479,7 +614,7 @@ EmpleadoConRol* ObtenerEmpleadosDePlanilla(Fecha fecha) {
 
     EmpleadoConRol* empleados = NULL;
 
-    if (mysql_query(conn, "CALL get_planXemp_por_fecha('2019-12-01');")) {
+    if (mysql_query(conn, query)) {
         printf("Error al ejecutar el query: %s\n", mysql_error(conn));
         return empleados;
     }
