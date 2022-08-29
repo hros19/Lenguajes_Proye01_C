@@ -50,6 +50,182 @@ struct factura {
 
 typedef struct factura Factura;
 
+struct reporteAnual {
+    double subtotal_ventas;
+    double total_impuesto;
+};
+
+typedef struct reporteAnual ReporteAnual;
+
+struct rendimientoArea {
+    char nombre_area[51];
+    double subtotal_ventas;
+};
+
+typedef struct rendimientoArea RendimientoArea;
+
+/*****Nombre************************************************************
+* ObtenerReporteAnual
+*****Descripción********************************************************
+* Obtiene el reporte anual de ventas de un negocio en particular.
+*****Retorno************************************************************
+* Un ReporteAnual de las ventas del negocio.
+*****Entradas***********************************************************
+* - char* cedula_comercio: Cedula del comercio.
+* - int anio: Año de las facturas.
+************************************************************************/
+ReporteAnual ObtenerReporteAnual(char* cedula_comercio, int anio) {
+    ReporteAnual reporte;
+    reporte.subtotal_ventas = -1;
+    reporte.total_impuesto = -1;
+    
+    MYSQL *conn = Conectar();
+    if (conn == NULL) {
+        return reporte;
+    }
+
+    char query[200];
+    sprintf(query, "CALL get_ventas_por_anio('%s', %d)", cedula_comercio, anio);
+
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        return reporte;
+    }
+
+    MYSQL_RES *res = mysql_store_result(conn);
+    if (res == NULL) {
+        return reporte;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (row == NULL) {
+        return reporte;
+    }
+
+    reporte.subtotal_ventas = atof(row[0]);
+    reporte.total_impuesto = atof(row[1]);
+    return reporte;
+}
+
+/*****Nombre************************************************************
+ * ObtenerRendimientoAreas
+ * ***********************************************************************
+ * Obtiene el rendimiento de las areas del local segun el mes y el año.
+ * ***********************************************************************
+ * Retorno: Un arreglo de RendimientoArea.
+ * ***********************************************************************
+ * Entradas:
+ * - int mes: Mes de las facturas.
+ * - int anio: Año de las facturas.
+ * ***********************************************************************/
+RendimientoArea* ObtenerRendimientoPorAreas(int mes, int anio) {
+    RendimientoArea* rendimiento = NULL;
+    MYSQL *conn = Conectar();
+    if (conn == NULL) {
+        return rendimiento;
+    }
+    
+    char query[200];
+    sprintf(query, "CALL get_rendimiento_de_areas_por_fecha(%d, %d)", mes, anio);
+    
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        return rendimiento;
+    }
+    
+    MYSQL_RES *res = mysql_store_result(conn);
+    if (res == NULL) {
+        return rendimiento;
+    }
+    
+    rendimiento = malloc(mysql_num_rows(res) * sizeof *rendimiento);
+    if (rendimiento == NULL) {
+        return rendimiento;
+    }
+
+    int i = 0;
+    while ( (row = mysql_fetch_row(res)) != NULL) {
+        strcpy(rendimiento[i].nombre_area, row[0]);
+        rendimiento[i].subtotal_ventas = atof(row[1]);
+        i++;
+    }
+
+    rendimiento[i].subtotal_ventas = -1;
+
+    mysql_close(conn);
+    
+    return rendimiento;
+}
+
+/*****Nombre************************************************************
+* ObtenerAniosConFacturas
+*****Descripción********************************************************
+* Obtiene todos los años en los que hay facturas en la base de datos.
+*****Retorno************************************************************
+* Un arreglo de enteros con los años.
+*****Entradas***********************************************************
+* Sin entradas
+************************************************************************/
+int* ObtenerAniosConFacturas() {
+    int* anios = NULL;
+    int anios_count = 0;
+    MYSQL *conn = Conectar();
+    if (conn == NULL) {
+        return anios;
+    }
+    char query[200];
+    sprintf(query, "CALL get_anios_con_facturas()");
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        return anios;
+    }
+    MYSQL_RES *res = mysql_store_result(conn);
+    if (res == NULL) {
+        return anios;
+    }
+    MYSQL_ROW row = mysql_fetch_row(res);
+    while (row != NULL) {
+        anios = realloc(anios, sizeof(int) * (anios_count + 1));
+        anios[anios_count] = atoi(row[0]);
+        anios_count++;
+        row = mysql_fetch_row(res);
+    }
+    return anios;
+}
+
+/*****Nombre************************************************************
+* ObtenerCantidadAniosConFacturas
+*****Descripción********************************************************
+* Obtiene la cantidad de años en los que hay facturas en la base de datos.
+*****Retorno************************************************************
+* Un entero con la cantidad de años.
+*****Entradas***********************************************************
+* No tiene
+************************************************************************/
+int ObtenerCantidadAniosConFacturas() {
+    MYSQL* conn = Conectar();
+    if (conn == NULL) {
+        return 0;
+    }
+    char query[200];
+    sprintf(query, "CALL get_cant_anios_con_facturas()");
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        return 0;
+    }
+    MYSQL_RES* res = mysql_store_result(conn);
+    if (res == NULL) {
+        return 0;
+    }
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (row == NULL) {
+        return 0;
+    }
+    int cantidad = atoi(row[0]);
+    mysql_close(conn);
+    return cantidad;
+}
+
 /*****Nombre************************************************************
 * RegistrarFactura
 *****Descripción********************************************************
@@ -246,6 +422,15 @@ DetalleFactura* ObtenerDetallesFactura(int id_factura) {
     return detalles;
 }
 
+/*****Nombre************************************************************
+* ObtenerFacturasComercio
+*****Descripción********************************************************
+* Obtiene todas las facturas de un comercio, buscando por su cedula.
+*****Retorno************************************************************
+* Una lista (puntero) de todas las facturas (Factura) de un comercio.
+*****Entradas***********************************************************
+* - char* cedula_comercio: Cedula del comercio.
+************************************************************************/
 Factura* ObtenerFacturasComercio(char* cedula_comercio) {
     MYSQL *conn = Conectar();
     char query[250];
@@ -283,6 +468,15 @@ Factura* ObtenerFacturasComercio(char* cedula_comercio) {
     return facturas;
 }
 
+/*****Nombre************************************************************
+* ObtenerFacturasPorAnio
+*****Descripción********************************************************
+* Obtiene todas las facturas de un comercio, buscando por un año.
+*****Retorno************************************************************
+* Una lista (puntero) de todas las facturas (Factura) de un comercio.
+*****Entradas***********************************************************
+* - int anio: Año de las facturas.
+************************************************************************/
 Factura* ObtenerFacturasPorAnio(int p_anio) {
     MYSQL *conn = Conectar();
     char query[250];
@@ -320,6 +514,16 @@ Factura* ObtenerFacturasPorAnio(int p_anio) {
     return facturas;
 }
 
+/*****Nombre************************************************************
+* ObtenerReporteAnual
+*****Descripción********************************************************
+* Obtiene el reporte anual de ventas de un negocio en particular.
+*****Retorno************************************************************
+* Un ReporteAnual de las ventas del negocio.
+*****Entradas***********************************************************
+* - char* cedula_comercio: Cedula del comercio.
+* - int anio: Año de las facturas.
+************************************************************************/
 int ObtenerCantidadFacturas(char* cedula_comercio) {
     MYSQL *conn = Conectar();
     char query[250];
@@ -338,5 +542,31 @@ int ObtenerCantidadFacturas(char* cedula_comercio) {
     return cantidad;
 }
 
+/*****Nombre************************************************************
+* ObtenerCantidadFacturasPorAnio
+*****Descripción********************************************************
+* Obtiene la cantidad de facturas de un comercio, buscando por un año.
+*****Retorno************************************************************
+* UL
+*****Entradas***********************************************************
+* - char* cedula_comercio: Cedula del comercio.
+* - int anio: Año de las facturas.
+************************************************************************/
+int ObtenerCantidadFacturasPorAnio(int anio) {
+    MYSQL *conn = Conectar();
+    char query[250];
+    sprintf(query, "CALL get_cant_facturas_por_anio(%i)", anio);
+    int result = mysql_query(conn, query);
+    if (result != 0) {
+        return -1;
+    }
+    
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    int cantidad = atoi(row[0]);
+    mysql_free_result(res);
+    mysql_close(conn);
+    return cantidad;
+}
 
 #endif // FACTURA_DAO_H
