@@ -1,0 +1,12 @@
+Lenguajes de Programación
+II Semestre, Año 2022
+
+Nombre y carné de estudiantes: 
+Hansol Antay 2020319635
+Alex Sánchez 2018014778
+
+Número de proyecto: 01 - Sistema agrícola.
+
+Fecha de entrega: 28 Agosto del 2022.
+
+Estatus de la entrega: Excelente.
