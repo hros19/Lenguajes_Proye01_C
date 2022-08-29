@@ -277,25 +277,25 @@ CREATE TABLE Areas (
 -- Valores por defecto de las áreas.
 
 INSERT INTO Areas (nombre, dimensiones, producto_principal) 
-  VALUES ('Cereales', 15.2, 'Trigo');
+  VALUES ('Finca 01', 15.2, 'Trigo');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Leguminosas', 20.5, 'Maiz');
+  VALUES ('Granjita', 20.5, 'Maiz');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Frutas', 12.4, 'Manzana');
+  VALUES ('Finca Pollera', 12.4, 'Pollo');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Hortalizas', 18.7, 'Papa');
+  VALUES ('El Maizal', 18.7, 'Maiz');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Verduras', 15.6, 'Pepino');
+  VALUES ('Finca 02', 15.6, 'Mango');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Oleaginosas', 19.5, 'Aguacate');
+  VALUES ('Finca  La Union', 19.5, 'Aguacate');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Ornamentales', 11.4, 'Cebolla');
+  VALUES ('La Finca', 11.4, 'Cebolla');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Tuberculosas', 12.5, 'Puerro');
+  VALUES ('Granja Don Carlos', 12.5, 'Puerro');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Pastos', 11.5, 'Lechuga');
+  VALUES ('Pasto alegre', 11.5, 'Lechuga');
 INSERT INTO Areas (nombre, dimensiones, producto_principal)
-  VALUES ('Medicinales', 19.5, 'Algodon');
+  VALUES ('Finca 03', 19.5, 'Yuca');
 
 DELIMITER $$
 
@@ -490,6 +490,17 @@ BEGIN
 END $$
 
 -- ===================================================
+-- PROCEDURE: get_cant_anios_con_planillas()
+-- Descripcion: Obtiene la cantidad de años que hay
+--              con planillas registradas.
+-- ===================================================
+CREATE PROCEDURE get_cant_anios_con_planillas()
+BEGIN
+  SELECT COUNT(DISTINCT YEAR(fecha_nomina)) AS cant_anios
+  FROM Planillas;
+END $$
+
+-- ===================================================
 -- PROCEDURE: get_planillas_con_cant_empleados
 -- Descripción: Obtiene la información de las planillas
 --              con la cantidad de empleados que la contiene.
@@ -596,6 +607,45 @@ CREATE TABLE PlanillasXEmpleados (
 );
 
 DELIMITER $$
+
+-- ===================================================
+-- PROCEDURE: get_anios_con_planillas
+-- Descripción: Obtiene los años con planillas registradas.
+-- ===================================================
+CREATE PROCEDURE get_anios_con_planillas()
+BEGIN
+  SELECT DISTINCT YEAR(fecha_nomina) AS anio FROM Planillas;
+END $$
+
+-- ===================================================
+-- PROCEDURE: get_cantidad_planillas_por_anio
+-- Descripción: Obtiene la cantidad de planillas registradas
+--              por año.
+-- Entradas:
+--    - IN anio INT: año de las planillas a buscar.
+--  ===================================================
+CREATE PROCEDURE get_cantidad_planillas_por_anio(IN anio INT)
+BEGIN
+  SELECT COUNT(*) AS cant_planillas FROM Planillas 
+  WHERE YEAR(fecha_nomina) = anio;
+END $$
+
+-- ===================================================
+-- PROCEDURE: get_total_nomina_con_cargas_por_anio
+-- Descripción: Obtiene la suma total de todos los salarios de los empleados
+--              multiplicados por la carga social de la planilla.
+-- Entradas:
+--    - IN anio INT: año de la nomina.
+--
+-- ===================================================
+CREATE PROCEDURE get_total_nomina_con_cargas_por_anio(IN anio INT)
+BEGIN
+    SELECT SUM(P.carga_social * E.salario_mensual) AS total_nomina
+    FROM Planillas P
+    INNER JOIN PlanillasXEmpleados PE ON P.id = PE.id_planilla
+    INNER JOIN Empleados E ON PE.cedula_empleado = E.cedula
+    WHERE YEAR(P.fecha_nomina) = anio;
+END $$
 
 -- ===================================================
 -- PROCEDURE: get_planXemp
@@ -757,6 +807,54 @@ CREATE TABLE Facturas (
 DELIMITER $$
 
 -- ===================================================
+-- PROCEDURE: get_anios_con_facturas
+-- Descripción: Obtiene los años que hay con facturas.
+-- ===================================================
+CREATE PROCEDURE get_anios_con_facturas()
+BEGIN
+  SELECT DISTINCT YEAR(fecha_facturacion) FROM Facturas;
+END $$
+
+-- ===================================================
+-- PROCEDURE: get_rendimiento_de_areas_por_fecha
+-- Descripción: Obtiene el subtotal de las facturas de
+--              una fecha por area.
+-- Entradas:
+--    - IN pMes INT: mes de la factura.
+--    - IN pAnio INT: año de la factura.
+-- ===================================================
+CREATE PROCEDURE get_rendimiento_de_areas_por_fecha(IN pMes INT, IN pAnio INT)
+BEGIN
+    SELECT Areas.nombre, SUM(Facturas.subtotal) FROM Facturas
+    INNER JOIN Areas ON Facturas.id_area = Areas.id
+    WHERE MONTH(fecha_facturacion) = pMes AND YEAR(fecha_facturacion) = pAnio
+    GROUP BY Areas.nombre;
+END $$
+
+
+-- ===================================================
+-- PROCEDURE: get_cant_anios_con_facturas
+-- Descripción: Obtiene la cantidad de años que hay con facturas.
+-- ===================================================
+CREATE PROCEDURE get_cant_anios_con_facturas()
+BEGIN
+  SELECT COUNT(DISTINCT YEAR(fecha_facturacion)) FROM Facturas;
+END $$
+
+-- ===================================================
+-- PROCEDURE: get_cant_facturas_por_anio
+-- Descripción: Obtiene la cantidad de facturas que
+--              hay por año.
+-- Entradas:
+--    - IN anio INT: año de la factura.
+-- ===================================================
+CREATE PROCEDURE get_cant_facturas_por_anio(IN anio INT)
+BEGIN
+  SELECT COUNT(*) FROM Facturas 
+  WHERE YEAR(fecha_facturacion) = anio;
+END $$
+
+-- ===================================================
 -- PROCEDURE: create_factura
 -- Descripción: Crea una factura.
 -- Entradas:
@@ -785,6 +883,21 @@ BEGIN
   WHERE cedula = cedula_comercio;
   SET @id_factura = LAST_INSERT_ID();
   SELECT @id_factura;
+END $$
+
+-- ===================================================
+-- PROCEDURE> get_ventas_por_anio
+-- Descripción: Devuelve las ventas del comercio
+--              por anio.
+-- Entradas:
+--    - IN cedula_comercio VARCHAR(50): cedula del comercio.
+--    - IN anio INT: anio de las ventas.
+--
+-- ===================================================
+CREATE PROCEDURE get_ventas_por_anio(IN cedula_comercio VARCHAR(50), IN anio INT)
+BEGIN
+  SELECT SUM(subtotal), SUM(impuesto) FROM Facturas 
+  WHERE cedula_comercio = cedula_comercio AND YEAR(fecha_facturacion) = anio;
 END $$
 
 -- ===================================================
