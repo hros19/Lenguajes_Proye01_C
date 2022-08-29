@@ -90,8 +90,7 @@ Operador ObtenerOperador(char* usuario) {
         usuario
     );
     if (mysql_query(conn, query)) {
-        fprintf(stderr, "[Error] %s\n", mysql_error(conn));
-        exit(1);
+        return operador;
     }
     res = mysql_use_result(conn);
 
